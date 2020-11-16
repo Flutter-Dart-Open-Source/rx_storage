@@ -7,7 +7,7 @@ script:
   - dartfmt -n ./lib --set-exit-if-changed
   - pub get
   - pub global activate coverage
-  - pub run test/rx_storage_test.dart
+  - pub run --enable-asserts test/rx_storage_test.dart
   - dart
     --disable-service-auth-codes
     --enable-vm-service=8111

@@ -22,7 +22,7 @@ void main() {
     test('Rx.mapNotNull.shouldThrowA', () {
       expect(
         () => Stream.value(42).mapNotNull(null),
-        throwsA(const TypeMatcher<AssertionError>()),
+        throwsA(isA<AssertionError>()),
       );
     });
 
