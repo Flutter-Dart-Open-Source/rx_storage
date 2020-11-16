@@ -9,7 +9,6 @@ import '../logger/logger.dart';
 import '../model/key_and_value.dart';
 import '../stream_extensions/map_not_null_stream_transformer.dart';
 import '../stream_extensions/single_subscription.dart';
-import '../synchronous_future.dart';
 
 /// Default [RxStorage] implementation
 class RealRxStorage implements RxStorage {
@@ -98,12 +97,12 @@ class RealRxStorage implements RxStorage {
     String key,
     T value,
   ) {
+    assert(key != null);
+
     if (T == dynamic) {
       assert(value == null);
       return storage.remove(key);
     }
-
-    assert(key != null);
 
     // TODO(40014): Remove cast when type promotion works.
     // This would normally be `as T` but we use `as dynamic` to make the
@@ -137,9 +136,8 @@ class RealRxStorage implements RxStorage {
         .mapNotNull(
             (map) => map.containsKey(key) ? KeyAndValue(key, map[key]) : null)
         .startWith(null) // Dummy value to trigger initial load.
-        .asyncMap<T>((entry) => entry == null
-            ? _getValue<T>(key)
-            : SynchronousFuture(entry.value as T));
+        .asyncMap<T>(
+            (entry) => entry == null ? _getValue<T>(key) : entry.value as T);
 
     if (_logger == null) {
       return stream;

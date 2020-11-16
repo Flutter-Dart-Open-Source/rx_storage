@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:rx_storage/rx_storage.dart';
 
 import 'fake_storage.dart';
@@ -38,6 +40,26 @@ void main() async {
 
   stopwatch.stop();
   print(stopwatch.elapsedMilliseconds);
+
+  final completer = Completer<void>.sync();
+  stopwatch
+    ..reset()
+    ..start();
+  print('Start 2...');
+  rxStorage.getStringStream('key').listen((event) {
+    if (event == 10000.toString()) {
+      print('End 2...');
+
+      stopwatch.stop();
+      print(stopwatch.elapsedMilliseconds);
+      completer.complete();
+    }
+  });
+  for (var i = 0; i <= 10000; i++) {
+    await rxStorage.setString('key', i.toString());
+  }
+
+  await completer.future;
 
   /*for (var i = 0; i < 10000; i++) {
       await Future.value(1)

@@ -1,5 +1,6 @@
 import 'package:rx_storage/src/interface/storage.dart';
-import 'package:rx_storage/src/synchronous_future.dart';
+
+import 'utils/synchronous_future.dart';
 
 Future<T> _wrap<T>(T value) => SynchronousFuture(value);
 
