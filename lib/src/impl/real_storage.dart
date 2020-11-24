@@ -46,20 +46,18 @@ class RealRxStorage implements RxStorage {
       _storage = storageOrFuture;
     }
 
-    if (_logger == null) {
-      return;
-    }
-
-    _subscription = _keyValuesSubject.listen((map) {
-      final pairs = [
-        for (final entry in map.entries)
-          KeyAndValue(
-            entry.key,
-            entry.value,
-          ),
-      ];
-      _logger!.keysChanged(UnmodifiableListView(pairs));
-    });
+    _subscription = _logger?.let(
+      (logger) => _keyValuesSubject.listen((map) {
+        final pairs = [
+          for (final entry in map.entries)
+            KeyAndValue(
+              entry.key,
+              entry.value,
+            ),
+        ];
+        logger.keysChanged(UnmodifiableListView(pairs));
+      }),
+    );
   }
 
   //
@@ -134,14 +132,11 @@ class RealRxStorage implements RxStorage {
             ? _getValue<T>(key)
             : entry.value as FutureOr<T?>);
 
-    if (_logger == null) {
-      return stream;
-    }
-
-    return stream
-        .doOnData((value) => _logger!.doOnDataStream(KeyAndValue(key, value)))
-        .doOnError(
-            (e, s) => _logger!.doOnErrorStream(e, s ?? StackTrace.empty));
+    return _logger?.let((logger) => stream
+            .doOnData((value) => logger.doOnDataStream(KeyAndValue(key, value)))
+            .doOnError(
+                (e, s) => logger.doOnErrorStream(e, s ?? StackTrace.empty))) ??
+        stream;
   }
 
   /// Get value from the persistent [Storage] by [key].
@@ -217,11 +212,11 @@ class RealRxStorage implements RxStorage {
     final result = await storage.clear();
 
     // All values are set to null
-    if (_logger != null) {
+    _logger?.let((logger) {
       for (final key in keys) {
-        _logger!.writeValue(dynamic, key, null, result);
+        logger.writeValue(dynamic, key, null, result);
       }
-    }
+    });
     if (result) {
       final map = {for (final k in keys) k: null};
       _sendKeyValueChanged(map);
@@ -239,11 +234,11 @@ class RealRxStorage implements RxStorage {
 
     // Read new values from storage.
     final map = {for (final k in keys) k: await storage.get(k)};
-    if (_logger != null) {
+    _logger?.let((logger) {
       for (final key in keys) {
-        _logger!.readValue(dynamic, key, map[key]);
+        logger.readValue(dynamic, key, map[key]);
       }
-    }
+    });
     _sendKeyValueChanged(map);
   }
 
@@ -310,4 +305,10 @@ class RealRxStorage implements RxStorage {
 
     _onDispose?.call();
   }
+}
+
+/// Scope function extension
+extension _ScopeFunctionExtension<T> on T {
+  /// Returns result from calling [f].
+  R let<R>(R Function(T) f) => f(this);
 }
