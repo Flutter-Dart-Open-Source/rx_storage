@@ -2,22 +2,20 @@ import 'dart:async';
 
 /// Map stream and reject null
 class MapNotNullStreamTransformer<T, R> extends StreamTransformerBase<T, R> {
-  final R Function(T) _mapper;
+  final R? Function(T) _mapper;
 
   /// Construct a [MapNotNullStreamTransformer] with [mapper]
-  MapNotNullStreamTransformer(R Function(T) mapper)
-      : assert(mapper != null),
-        _mapper = mapper;
+  MapNotNullStreamTransformer(R? Function(T) mapper) : _mapper = mapper;
 
   @override
   Stream<R> bind(Stream<T> stream) {
-    StreamController<R> controller;
-    StreamSubscription<T> subscription;
+    late StreamController<R> controller;
+    late StreamSubscription<T> subscription;
 
     void onListen() {
       subscription = stream.listen(
         (data) {
-          R mappedValue;
+          R? mappedValue;
 
           try {
             mappedValue = _mapper(data);
@@ -72,6 +70,6 @@ class MapNotNullStreamTransformer<T, R> extends StreamTransformerBase<T, R> {
 ///       .listen(print); // prints 1, 3
 extension MapNotNullStreamExtension<T> on Stream<T> {
   /// Map stream and reject null
-  Stream<R> mapNotNull<R>(R Function(T) mapper) =>
+  Stream<R> mapNotNull<R>(R? Function(T) mapper) =>
       transform(MapNotNullStreamTransformer(mapper));
 }

@@ -7,23 +7,24 @@ class DefaultLogger implements Logger {
   const DefaultLogger();
 
   @override
-  void keysChanged(Iterable<KeyAndValue> pairs) {
+  void keysChanged(Iterable<KeyAndValue<Object?>> pairs) {
     print(' ↓ Key changes');
     print(pairs.map((p) => '    → $p').join('\n'));
   }
 
   @override
-  void doOnDataStream(KeyAndValue pair) => print(' → Stream emits data: $pair');
+  void doOnDataStream(KeyAndValue<Object?> pair) =>
+      print(' → Stream emits data: $pair');
 
   @override
-  void doOnErrorStream(dynamic error, StackTrace stackTrace) =>
+  void doOnErrorStream(Object error, StackTrace stackTrace) =>
       print(' → Stream emits error: $error, $stackTrace');
 
   @override
-  void readValue(Type type, String key, dynamic value) =>
+  void readValue(Type type, String key, Object? value) =>
       print(" → Read value: type $type, key '$key' → $value");
 
   @override
-  void writeValue(Type type, String key, dynamic value, bool writeResult) => print(
+  void writeValue(Type type, String key, Object? value, bool writeResult) => print(
       " → Write value: type $type, key '$key', value $value  → result $writeResult");
 }

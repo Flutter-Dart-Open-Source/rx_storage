@@ -12,30 +12,33 @@ import '../stream_extensions/single_subscription.dart';
 
 /// Default [RxStorage] implementation
 class RealRxStorage implements RxStorage {
+  static const _initialKeyValue =
+      KeyAndValue('RealRxStorage', 'hoc081098@gmail.com');
+
   /// Trigger subject
-  final _keyValuesSubject = PublishSubject<Map<String, dynamic>>();
+  final _keyValuesSubject = PublishSubject<Map<String, Object?>>();
 
   /// Logger subscription. Nullable
-  StreamSubscription<Map<String, dynamic>> _subscription;
+  StreamSubscription<Map<String, dynamic>>? _subscription;
 
   /// Nullable.
-  Storage _storage;
+  Storage? _storage;
 
   /// Nullable.
-  Future<Storage> _storageFuture;
+  Future<Storage>? _storageFuture;
 
   /// Nullable
-  final Logger _logger;
+  final Logger? _logger;
 
   /// Nullable
-  final void Function() _onDispose;
+  final void Function()? _onDispose;
 
   /// Construct a [RealRxStorage].
   RealRxStorage(
     FutureOr<Storage> storageOrFuture, [
     this._logger,
     this._onDispose,
-  ]) : assert(storageOrFuture != null) {
+  ]) {
     if (storageOrFuture is Future<Storage>) {
       _storageFuture = storageOrFuture.then((value) => _storage = value);
     } else {
@@ -55,7 +58,7 @@ class RealRxStorage implements RxStorage {
             entry.value,
           ),
       ];
-      _logger.keysChanged(UnmodifiableListView(pairs));
+      _logger!.keysChanged(UnmodifiableListView(pairs));
     });
   }
 
@@ -68,8 +71,6 @@ class RealRxStorage implements RxStorage {
 
   /// Read value from persistent [storage] by [key].
   static Future<dynamic> _readFromStorage<T>(Storage storage, String key) {
-    assert(key != null);
-
     if (T == dynamic) {
       return storage.get(key);
     }
@@ -95,21 +96,14 @@ class RealRxStorage implements RxStorage {
   static Future<bool> _writeToStorage<T>(
     Storage storage,
     String key,
-    T value,
+    T? value,
   ) {
-    assert(key != null);
-
     if (T == dynamic) {
       assert(value == null);
       return storage.remove(key);
     }
 
-    // TODO(40014): Remove cast when type promotion works.
-    // This would normally be `as T` but we use `as dynamic` to make the
-    // unneeded check be implicit to match dart2js unsound optimizations in the
-    // user code.
     final dynamicVal = value as dynamic;
-
     if (T == double) {
       return storage.setDouble(key, dynamicVal);
     }
@@ -130,40 +124,42 @@ class RealRxStorage implements RxStorage {
   }
 
   /// Get [Stream] from the persistent storage
-  Stream<T> _getStream<T>(String key) {
+  Stream<T?> _getStream<T>(String key) {
     final stream = _keyValuesSubject
         .toSingleSubscriptionStream()
         .mapNotNull(
             (map) => map.containsKey(key) ? KeyAndValue(key, map[key]) : null)
-        .startWith(null) // Dummy value to trigger initial load.
-        .asyncMap<T>(
-            (entry) => entry == null ? _getValue<T>(key) : entry.value as T);
+        .startWith(_initialKeyValue) // Dummy value to trigger initial load.
+        .asyncMap<T?>((entry) => identical(_initialKeyValue, entry)
+            ? _getValue<T>(key)
+            : entry.value as FutureOr<T?>);
 
     if (_logger == null) {
       return stream;
     }
 
     return stream
-        .doOnData((value) => _logger.doOnDataStream(KeyAndValue(key, value)))
-        .doOnError((e, StackTrace s) => _logger.doOnErrorStream(e, s));
+        .doOnData((value) => _logger!.doOnDataStream(KeyAndValue(key, value)))
+        .doOnError(
+            (e, s) => _logger!.doOnErrorStream(e, s ?? StackTrace.empty));
   }
 
   /// Get value from the persistent [Storage] by [key].
-  Future<T> _getValue<T>(String key) async {
-    final storage = _storage ?? await _storageFuture;
-    final T value = await _readFromStorage<T>(storage, key);
+  Future<T?> _getValue<T>(String key) async {
+    final storage = _storage ?? await _storageFuture!;
+    final T? value = await _readFromStorage<T>(storage, key);
 
     _logger?.readValue(T, key, value);
     return value;
   }
 
   /// Set [value] associated with [key].
-  Future<bool> _setValue<T>(String key, T value) async {
-    final storage = _storage ?? await _storageFuture;
+  Future<bool> _setValue<T>(String key, T? value) async {
+    final storage = _storage ?? await _storageFuture!;
     final result = await _writeToStorage<T>(storage, key, value);
 
     _logger?.writeValue(T, key, value, result);
-    if (result ?? false) {
+    if (result) {
       _sendKeyValueChanged({key: value});
     }
 
@@ -185,49 +181,48 @@ class RealRxStorage implements RxStorage {
 
   @override
   Future<bool> containsKey(String key) async {
-    assert(key != null);
-    final storage = _storage ?? await _storageFuture;
+    final storage = _storage ?? await _storageFuture!;
     return storage.containsKey(key);
   }
 
   @override
-  Future<dynamic> get(String key) => _getValue<dynamic>(key);
+  Future<Object?> get(String key) => _getValue<dynamic>(key);
 
   @override
-  Future<bool> getBool(String key) => _getValue<bool>(key);
+  Future<bool?> getBool(String key) => _getValue<bool>(key);
 
   @override
-  Future<double> getDouble(String key) => _getValue<double>(key);
+  Future<double?> getDouble(String key) => _getValue<double>(key);
 
   @override
-  Future<int> getInt(String key) => _getValue<int>(key);
+  Future<int?> getInt(String key) => _getValue<int>(key);
 
   @override
   Future<Set<String>> getKeys() async {
-    final storage = _storage ?? await _storageFuture;
+    final storage = _storage ?? await _storageFuture!;
     return storage.getKeys();
   }
 
   @override
-  Future<String> getString(String key) => _getValue<String>(key);
+  Future<String?> getString(String key) => _getValue<String>(key);
 
   @override
-  Future<List<String>> getStringList(String key) =>
+  Future<List<String>?> getStringList(String key) =>
       _getValue<List<String>>(key);
 
   @override
   Future<bool> clear() async {
-    final storage = _storage ?? await _storageFuture;
+    final storage = _storage ?? await _storageFuture!;
     final keys = await storage.getKeys();
     final result = await storage.clear();
 
     // All values are set to null
     if (_logger != null) {
       for (final key in keys) {
-        _logger.writeValue(dynamic, key, null, result);
+        _logger!.writeValue(dynamic, key, null, result);
       }
     }
-    if (result ?? false) {
+    if (result) {
       final map = {for (final k in keys) k: null};
       _sendKeyValueChanged(map);
     }
@@ -237,7 +232,7 @@ class RealRxStorage implements RxStorage {
 
   @override
   Future<void> reload() async {
-    final storage = _storage ?? await _storageFuture;
+    final storage = _storage ?? await _storageFuture!;
     await storage.reload();
 
     final keys = await storage.getKeys();
@@ -246,7 +241,7 @@ class RealRxStorage implements RxStorage {
     final map = {for (final k in keys) k: await storage.get(k)};
     if (_logger != null) {
       for (final key in keys) {
-        _logger.readValue(dynamic, key, map[key]);
+        _logger!.readValue(dynamic, key, map[key]);
       }
     }
     _sendKeyValueChanged(map);
@@ -256,55 +251,56 @@ class RealRxStorage implements RxStorage {
   Future<bool> remove(String key) => _setValue<dynamic>(key, null);
 
   @override
-  Future<bool> setBool(String key, bool value) => _setValue<bool>(key, value);
+  Future<bool> setBool(String key, bool? value) => _setValue<bool>(key, value);
 
   @override
-  Future<bool> setDouble(String key, double value) =>
+  Future<bool> setDouble(String key, double? value) =>
       _setValue<double>(key, value);
 
   @override
-  Future<bool> setInt(String key, int value) => _setValue<int>(key, value);
+  Future<bool> setInt(String key, int? value) => _setValue<int>(key, value);
 
   @override
-  Future<bool> setString(String key, String value) =>
+  Future<bool> setString(String key, String? value) =>
       _setValue<String>(key, value);
 
   @override
-  Future<bool> setStringList(String key, List<String> value) =>
+  Future<bool> setStringList(String key, List<String>? value) =>
       _setValue<List<String>>(key, value);
 
   // Get streams (implements [RxStorage])
 
   @override
-  Stream<dynamic> getStream(String key) => _getStream<dynamic>(key);
+  Stream<Object?> getStream(String key) => _getStream<dynamic>(key);
 
   @override
-  Stream<bool> getBoolStream(String key) => _getStream<bool>(key);
+  Stream<bool?> getBoolStream(String key) => _getStream<bool>(key);
 
   @override
-  Stream<double> getDoubleStream(String key) => _getStream<double>(key);
+  Stream<double?> getDoubleStream(String key) => _getStream<double>(key);
 
   @override
-  Stream<int> getIntStream(String key) => _getStream<int>(key);
+  Stream<int?> getIntStream(String key) => _getStream<int>(key);
 
   @override
-  Stream<String> getStringStream(String key) => _getStream<String>(key);
+  Stream<String?> getStringStream(String key) => _getStream<String>(key);
 
   @override
-  Stream<List<String>> getStringListStream(String key) =>
+  Stream<List<String>?> getStringListStream(String key) =>
       _getStream<List<String>>(key);
 
   @override
   Stream<Set<String>> getKeysStream() => _keyValuesSubject
       .toSingleSubscriptionStream()
-      .startWith(null)
-      .asyncMap((_) => getKeys());
+      .startWith(const <String, dynamic>{}).asyncMap((_) => getKeys());
 
   @override
   Future<void> dispose() async {
-    final futures = [_keyValuesSubject.close(), _subscription?.cancel()]
-        .where((future) => future != null)
-        .toList(growable: false);
+    final cancelFuture = _subscription?.cancel();
+    final futures = [
+      _keyValuesSubject.close(),
+      if (cancelFuture != null) cancelFuture,
+    ];
 
     if (futures.length == 1) {
       await futures[0];

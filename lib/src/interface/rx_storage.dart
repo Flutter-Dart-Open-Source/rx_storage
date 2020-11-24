@@ -9,39 +9,39 @@ abstract class RxStorage implements Storage {
   /// TODO
   factory RxStorage(
     FutureOr<Storage> storageOrFuture, [
-    Logger logger,
-    void Function() onDispose,
+    Logger? logger,
+    void Function()? onDispose,
   ]) =>
       RealRxStorage(storageOrFuture, logger, onDispose);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
-  Stream<dynamic> getStream(String key);
+  Stream<Object?> getStream(String key);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a bool.
-  Stream<bool> getBoolStream(String key);
+  Stream<bool?> getBoolStream(String key);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a double.
-  Stream<double> getDoubleStream(String key);
+  Stream<double?> getDoubleStream(String key);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a int.
-  Stream<int> getIntStream(String key);
+  Stream<int?> getIntStream(String key);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a String.
-  Stream<String> getStringStream(String key);
+  Stream<String?> getStringStream(String key);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a string set.
-  Stream<List<String>> getStringListStream(String key);
+  Stream<List<String>?> getStringListStream(String key);
 
   /// Return [Stream] that will emit all keys read from persistent storage.
   /// It will automatic emit all keys when any value was changed.

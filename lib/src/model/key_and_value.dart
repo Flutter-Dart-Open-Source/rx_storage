@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Pair of [key] and [value].
 class KeyAndValue<T> {
   /// The key of the [KeyAndValue].

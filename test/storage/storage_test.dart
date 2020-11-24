@@ -22,8 +22,8 @@ void main() {
       'List': <String>['baz', 'quox'],
     };
 
-    FakeStorage storage;
-    RxStorage rxStorage;
+    late FakeStorage storage;
+    late RxStorage rxStorage;
 
     setUp(() {
       storage = FakeStorage(kTestValues);
@@ -110,7 +110,7 @@ void main() {
       final cachedList = await rxStorage.getStringList('myList');
       expect(cachedList, <String>[]);
 
-      cachedList.add('foobar2');
+      cachedList!.add('foobar2');
 
       expect(await rxStorage.getStringList('myList'), <String>[]);
     });

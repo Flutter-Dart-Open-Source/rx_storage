@@ -19,14 +19,7 @@ void main() {
       );
     });
 
-    test('Rx.mapNotNull.shouldThrowA', () {
-      expect(
-        () => Stream.value(42).mapNotNull(null),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('Rx.mapNotNull.shouldThrowB', () async {
+    test('Rx.mapNotNull.shouldThrow.A', () async {
       final stream = Stream.error(Exception()).mapNotNull((_) => true);
       await expectLater(
         stream,
@@ -34,7 +27,7 @@ void main() {
       );
     });
 
-    test('Rx.mapNotNull.shouldThrowC', () async {
+    test('Rx.mapNotNull.shouldThrow.B', () async {
       final stream = Stream.fromIterable([1, 2, 3, 4]).mapNotNull((i) {
         if (i == 3) {
           throw Exception();
@@ -68,7 +61,7 @@ void main() {
     });
 
     test('Rx.mapNotNull.pause.resume', () async {
-      StreamSubscription<num> subscription;
+      late StreamSubscription<num> subscription;
 
       subscription =
           Stream.fromIterable([2, 3, 4, 5, 6]).mapNotNull((i) => i).listen(

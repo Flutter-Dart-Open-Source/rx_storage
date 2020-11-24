@@ -13,8 +13,8 @@ void main() {
       'List': <String>['foo', 'bar'],
     };
 
-    FakeStorage fakeStorage;
-    RxStorage rxStorage;
+    late FakeStorage fakeStorage;
+    late RxStorage rxStorage;
 
     setUp(() {
       fakeStorage = FakeStorage(kTestValues);
@@ -202,7 +202,7 @@ void main() {
     test('Does not emit anything after disposed', () async {
       final stream = rxStorage.getStringListStream('List');
 
-      const expected = [
+      const expected = <dynamic>[
         anything,
         ['before', 'dispose', '1'],
         ['before', 'dispose', '2'],
@@ -214,10 +214,7 @@ void main() {
       );
 
       for (final v in expected.skip(1)) {
-        await rxStorage.setStringList(
-          'List',
-          v,
-        );
+        await rxStorage.setStringList('List', v);
         await Future.delayed(Duration.zero);
       }
 
