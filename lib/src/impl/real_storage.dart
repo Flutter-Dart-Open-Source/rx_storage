@@ -104,10 +104,6 @@ class RealRxStorage implements RxStorage {
       return storage.remove(key);
     }
 
-    // TODO(40014): Remove cast when type promotion works.
-    // This would normally be `as T` but we use `as dynamic` to make the
-    // unneeded check be implicit to match dart2js unsound optimizations in the
-    // user code.
     final dynamicVal = value as dynamic;
 
     if (T == double) {
