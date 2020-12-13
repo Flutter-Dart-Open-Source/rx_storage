@@ -1,7 +1,10 @@
 name: rx_storage
-description: A starting point for Dart libraries or applications.
-# version: 1.0.0
-# homepage: https://www.example.com
+description: Reactive storage for Dart/Flutter. RxDart Storage for Dart/Flutter.
+version: 0.0.1
+author: Petrus Nguyễn Thái Học <hoc081098@gmail.com>
+homepage: https://github.com/Flutter-Dart-Open-Source/rx_storage.git
+repository: https://github.com/Flutter-Dart-Open-Source/rx_storage.git
+issue_tracker: https://github.com/Flutter-Dart-Open-Source/rx_storage/issues
 
 environment:
   sdk: '>=2.7.0 <3.0.0'
