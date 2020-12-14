@@ -1,7 +1,6 @@
-A library for Dart developers.
+# rx_storage
 
-Created from templates made available by Stagehand under a BSD-style
-[license](https://github.com/dart-lang/stagehand/blob/master/LICENSE).
+Reactive storage for Dart/Flutter. RxDart Storage for Dart/Flutter.
 
 ## Usage
 
@@ -10,8 +9,13 @@ A simple usage example:
 ```dart
 import 'package:rx_storage/rx_storage.dart';
 
+class StorageAdapter implements Storage { ... }
+
 main() {
-  var awesome = new Awesome();
+  final Storage adapter = StorageAdapter();
+  final RxStorage rxStorage = RxStorage(adapter);
+
+  rxStorage.getStringStream('key').listen((value) { ... });
 }
 ```
 
@@ -19,4 +23,4 @@ main() {
 
 Please file feature requests and bugs at the [issue tracker][tracker].
 
-[tracker]: http://example.com/issues/replaceme
+[tracker]: https://github.com/Flutter-Dart-Open-Source/rx_storage/issues
