@@ -2,6 +2,9 @@
 
 Reactive storage for Dart/Flutter. RxDart Storage for Dart/Flutter.
 
+![Pub Version](https://img.shields.io/pub/v/rx_storage?style=plastic)
+[![codecov](https://codecov.io/gh/Flutter-Dart-Open-Source/rx_storage/branch/master/graph/badge.svg?token=6eORcR6Web)](https://codecov.io/gh/Flutter-Dart-Open-Source/rx_storage)
+
 ## Usage
 
 A simple usage example:
