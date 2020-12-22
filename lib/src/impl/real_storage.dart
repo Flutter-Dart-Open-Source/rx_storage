@@ -310,5 +310,7 @@ class RealRxStorage implements RxStorage {
 /// Scope function extension
 extension _ScopeFunctionExtension<T> on T {
   /// Returns result from calling [f].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   R let<R>(R Function(T) f) => f(this);
 }
