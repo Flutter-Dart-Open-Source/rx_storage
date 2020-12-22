@@ -1,26 +1,33 @@
 import 'dart:async';
 
-/// Map stream and reject null
-class MapNotNullStreamTransformer<T, R> extends StreamTransformerBase<T, R> {
-  final R Function(T) _mapper;
+/// Transforms each element of this stream into a new stream event, and reject null.
+/// ### Example
+///
+///     Stream.fromIterable([1, 'two', 3, 'four'])
+///       .mapNotNull((i) => i is int ? i * 2 : null)
+///       .listen(print); // prints 2, 6
+///
+/// #### as opposed to:
+///
+///     Stream.fromIterable([1, 'two', 3, 'four'])
+///       .map((i) => i is int ? i * 2 : null)
+///       .where((i) => i != null)
+///       .listen(print); // prints 2, 6
+extension MapNotNullStreamExtension<T> on Stream<T> {
+  /// Transforms each element of this stream into a new stream event, and reject null.
+  Stream<R> mapNotNull<R>(R Function(T) mapper) {
+    assert(mapper != null);
 
-  /// Construct a [MapNotNullStreamTransformer] with [mapper]
-  MapNotNullStreamTransformer(R Function(T) mapper)
-      : assert(mapper != null),
-        _mapper = mapper;
-
-  @override
-  Stream<R> bind(Stream<T> stream) {
     StreamController<R> controller;
     StreamSubscription<T> subscription;
 
     void onListen() {
-      subscription = stream.listen(
+      subscription = listen(
         (data) {
           R mappedValue;
 
           try {
-            mappedValue = _mapper(data);
+            mappedValue = mapper(data);
           } catch (e, s) {
             controller.addError(e, s);
             return;
@@ -37,7 +44,7 @@ class MapNotNullStreamTransformer<T, R> extends StreamTransformerBase<T, R> {
 
     Future<void> onCancel() => subscription.cancel();
 
-    if (stream.isBroadcast) {
+    if (isBroadcast) {
       controller = StreamController<R>.broadcast(
         sync: true,
         onListen: onListen,
@@ -55,23 +62,4 @@ class MapNotNullStreamTransformer<T, R> extends StreamTransformerBase<T, R> {
 
     return controller.stream;
   }
-}
-
-/// Map stream and reject null extension
-/// ### Example
-///
-///     Stream.fromIterable([1, 'two', 3, 'four'])
-///       .mapNotNull((i) => i is int ? i : null)
-///       .listen(print); // prints 1, 3
-///
-/// #### as opposed to:
-///
-///     Stream.fromIterable([1, 'two', 3, 'four'])
-///       .map((i) => i is int ? i : null)
-///       .where((i) => i != null)
-///       .listen(print); // prints 1, 3
-extension MapNotNullStreamExtension<T> on Stream<T> {
-  /// Map stream and reject null
-  Stream<R> mapNotNull<R>(R Function(T) mapper) =>
-      transform(MapNotNullStreamTransformer(mapper));
 }
