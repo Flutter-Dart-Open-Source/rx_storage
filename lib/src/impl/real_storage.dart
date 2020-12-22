@@ -298,9 +298,11 @@ class RealRxStorage implements RxStorage {
 
   @override
   Future<void> dispose() async {
-    final futures = [_keyValuesSubject.close(), _subscription?.cancel()]
-        .where((future) => future != null)
-        .toList(growable: false);
+    final cancelFuture = _subscription?.cancel();
+    final futures = [
+      _keyValuesSubject.close(),
+      if (cancelFuture != null) cancelFuture,
+    ];
 
     if (futures.length == 1) {
       await futures[0];
