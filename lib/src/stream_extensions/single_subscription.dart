@@ -1,9 +1,9 @@
 import 'dart:async';
 
-/// A transformer that converts a broadcast stream into a single-subscription
-/// stream.
+/// A transformer that converts a Stream into a single-subscription stream.
 class SingleSubscriptionTransformer<T> extends StreamTransformerBase<T, T> {
-  ///
+  /// Construct a [SingleSubscriptionTransformer] that converts a Stream
+  /// into a single-subscription stream.
   const SingleSubscriptionTransformer();
 
   @override
@@ -27,9 +27,9 @@ class SingleSubscriptionTransformer<T> extends StreamTransformerBase<T, T> {
   }
 }
 
-///
+/// Converts a Stream into a single-subscription stream.
 extension ToSingleSubscriptionStreamExtension<T> on Stream<T> {
-  ///
+  /// Converts a Stream into a single-subscription stream.
   Stream<T> toSingleSubscriptionStream() =>
       transform(SingleSubscriptionTransformer<T>());
 }
