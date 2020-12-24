@@ -7,7 +7,7 @@ import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
 import '../logger/logger.dart';
 import '../model/key_and_value.dart';
-import '../stream_extensions/map_not_null_stream_transformer.dart';
+import '../stream_extensions/map_not_null.dart';
 import '../stream_extensions/single_subscription.dart';
 
 /// Default [RxStorage] implementation

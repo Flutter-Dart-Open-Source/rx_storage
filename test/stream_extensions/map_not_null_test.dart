@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:rx_storage/src/stream_extensions/map_not_null_stream_transformer.dart';
+import 'package:rx_storage/src/stream_extensions/map_not_null.dart';
 import 'package:test/test.dart';
 
 void main() {
