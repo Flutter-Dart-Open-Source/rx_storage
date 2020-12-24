@@ -30,5 +30,14 @@ void main() {
       streamController.add(3);
       streamController.close();
     });
+
+    test('Assert isBroadcast', () {
+      Stream<void>.empty().toSingleSubscriptionStream();
+
+      expect(
+        () => Stream.value(1).toSingleSubscriptionStream(),
+        throwsA(isA<AssertionError>()),
+      );
+    });
   });
 }
