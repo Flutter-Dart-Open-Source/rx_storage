@@ -1,7 +1,7 @@
 name: rx_storage
 description: Reactive storage for Dart/Flutter. RxDart Storage for Dart/Flutter.
 version: 0.0.1
-author: Petrus Nguyễn Thái Học <hoc081098@gmail.com>
+author: Petrus Nguyen Thai Hoc <hoc081098@gmail.com>
 homepage: https://github.com/Flutter-Dart-Open-Source/rx_storage.git
 repository: https://github.com/Flutter-Dart-Open-Source/rx_storage.git
 issue_tracker: https://github.com/Flutter-Dart-Open-Source/rx_storage/issues
