@@ -3,6 +3,7 @@ import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
+import '../utils/compat.dart';
 
 void main() {
   group('Storage', () {
@@ -23,11 +24,11 @@ void main() {
     };
 
     FakeStorage storage;
-    RxStorage rxStorage;
+    FakeRxStorage rxStorage;
 
     setUp(() {
       storage = FakeStorage(kTestValues);
-      rxStorage = RxStorage(storage, const DefaultLogger());
+      rxStorage = FakeRxStorage(storage, const DefaultLogger());
     });
 
     tearDown(() async {

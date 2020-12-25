@@ -1,10 +1,10 @@
 /// Pair of [key] and [value].
-class KeyAndValue<T> {
+class KeyAndValue<K, V> {
   /// The key of the [KeyAndValue].
-  final String key;
+  final K key;
 
   /// The value associated to [key].
-  final T value;
+  final V value;
 
   /// Construct a [KeyAndValue] with [key] and [key].
   const KeyAndValue(this.key, this.value);

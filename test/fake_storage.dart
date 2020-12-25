@@ -1,10 +1,20 @@
+import 'dart:async';
+
+import 'package:rx_storage/rx_storage.dart';
 import 'package:rx_storage/src/interface/storage.dart';
 
 import 'utils/synchronous_future.dart';
 
 Future<T> _wrap<T>(T value) => SynchronousFuture(value);
 
-class FakeStorage implements Storage {
+abstract class StringKeyStorage extends Storage<String> {
+  Future<void> reload();
+}
+
+abstract class StringKeyRxStorage extends StringKeyStorage
+    implements RxStorage<String> {}
+
+class FakeStorage implements StringKeyStorage {
   Map<String, dynamic> _map;
   Map<String, dynamic> _pendingMap;
 
@@ -42,25 +52,8 @@ class FakeStorage implements Storage {
   Future<bool> containsKey(String key) => _wrap(_map.containsKey(key));
 
   @override
-  Future get(String key) => _getValue(key);
-
-  @override
-  Future<bool> getBool(String key) => _getValue(key);
-
-  @override
-  Future<double> getDouble(String key) => _getValue(key);
-
-  @override
-  Future<int> getInt(String key) => _getValue(key);
-
-  @override
-  Future<Set<String>> getKeys() => _wrap(_map.keys.toSet());
-
-  @override
-  Future<String> getString(String key) => _getValue(key);
-
-  @override
-  Future<List<String>> getStringList(String key) => _getValue(key);
+  Future<bool> write<T>(String key, T value, Encoder<T> encoder) =>
+      _setValue(key, encoder(value));
 
   @override
   Future<void> reload() {
@@ -75,18 +68,37 @@ class FakeStorage implements Storage {
   Future<bool> remove(String key) => _setValue(key, null);
 
   @override
-  Future<bool> setBool(String key, bool value) => _setValue(key, value);
+  Future<T> read<T>(String key, Decoder<T> decoder) =>
+      _getValue(key).then(decoder);
 
   @override
-  Future<bool> setDouble(String key, double value) => _setValue(key, value);
+  Future<Map<String, dynamic>> readAll() => _wrap({..._map});
+}
+
+class FakeRxStorage extends RealRxStorage<String>
+    implements StringKeyRxStorage {
+  final FutureOr<StringKeyStorage> storageOrFuture;
+  final Logger logger;
+
+  FakeRxStorage(
+    this.storageOrFuture, [
+    this.logger,
+    void Function() onDispose,
+  ]) : super(
+          storageOrFuture,
+          logger,
+          onDispose,
+        );
 
   @override
-  Future<bool> setInt(String key, int value) => _setValue(key, value);
+  Future<void> reload() async {
+    final s = await storageOrFuture;
+    await s.reload();
 
-  @override
-  Future<bool> setString(String key, String value) => _setValue(key, value);
-
-  @override
-  Future<bool> setStringList(String key, List<String> value) =>
-      _setValue(key, value);
+    final map = await s.readAll();
+    sendChange(map);
+    if (logger != null) {
+      map.forEach((key, value) => logger.readValue(dynamic, key, value));
+    }
+  }
 }

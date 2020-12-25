@@ -2,6 +2,7 @@ import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
+import '../utils/compat.dart';
 
 void main() {
   group('Test Stream', () {
@@ -14,14 +15,14 @@ void main() {
     };
 
     FakeStorage fakeStorage;
-    RxStorage rxStorage;
+    FakeRxStorage rxStorage;
 
     setUp(() {
       fakeStorage = FakeStorage(kTestValues);
 
-      rxStorage = RxStorage(
+      rxStorage = FakeRxStorage(
         fakeStorage,
-        // const DefaultLogger(),
+        const DefaultLogger(),
       );
     });
 
@@ -226,16 +227,20 @@ void main() {
       await rxStorage.dispose();
       await Future.delayed(Duration.zero);
 
-      // not emit but persisted
-      await rxStorage.setStringList(
-        'List',
-        <String>['after', 'dispose'],
-      );
-      // working fine
-      expect(
-        await rxStorage.getStringList('List'),
-        <String>['after', 'dispose'],
-      );
+      try {
+        // cannot use anymore
+        await rxStorage.setStringList(
+          'List',
+          <String>['after', 'dispose'],
+        );
+        // working fine
+        expect(
+          await rxStorage.getStringList('List'),
+          <String>['after', 'dispose'],
+        );
+      } catch (e) {
+        expect(e, isStateError);
+      }
 
       // timeout is 2 seconds
       await Future.delayed(const Duration(seconds: 2));
