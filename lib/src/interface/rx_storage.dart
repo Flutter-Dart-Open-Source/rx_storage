@@ -6,7 +6,7 @@ import 'storage.dart';
 
 /// Get [Stream]s by key from persistent storage.
 abstract class RxStorage<Key> implements Storage<Key> {
-  /// TODO
+  /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(
     FutureOr<Storage<Key>> storageOrFuture, [
     Logger logger,

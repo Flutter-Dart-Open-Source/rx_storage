@@ -215,9 +215,9 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
 
   @override
   Future<void> dispose() {
-    return _disposeMemo.runOnce(() async {
-      assert(_debugAssertNotDisposed());
+    assert(_debugAssertNotDisposed());
 
+    return _disposeMemo.runOnce(() async {
       final cancelFuture = _subscription?.cancel();
 
       if (cancelFuture == null) {

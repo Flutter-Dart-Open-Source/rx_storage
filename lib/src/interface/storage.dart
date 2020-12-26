@@ -1,7 +1,9 @@
-/// TODO
+/// Convert [T] to type that [Storage] can be persisted.
+/// This used in [Storage.write].
 typedef Encoder<T> = dynamic Function(T);
 
-/// TODO
+/// Convert storage persisted type to [T].
+/// This used in [Storage.read].
 typedef Decoder<T> = T Function(dynamic);
 
 /// A persistent store for simple data. Data is persisted to disk asynchronously.
