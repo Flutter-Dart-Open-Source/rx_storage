@@ -88,6 +88,11 @@ class RealRxStorage<Key> implements RxStorage<Key> {
     }
   }
 
+  /// TODO
+  @protected
+  Future<R> useStorage<R>(Future<R> Function(Storage<Key>) block) =>
+      _storage != null ? block(_storage) : _storageFuture.then(block);
+
   // Get and set methods (implements [Storage])
 
   @override
@@ -95,17 +100,16 @@ class RealRxStorage<Key> implements RxStorage<Key> {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    final storage = _storage ?? await _storageFuture;
-    return storage.containsKey(key);
+    return useStorage((s) => s.containsKey(key));
   }
 
   @override
   Future<T> read<T>(Key key, Decoder<T> decoder) async {
     assert(_debugAssertNotDisposed());
+    assert(key != null);
+    assert(decoder != null);
 
-    final storage = _storage ?? await _storageFuture;
-    final value = await storage.read(key, decoder);
-
+    final value = await useStorage((s) => s.read(key, decoder));
     _logger?.readValue(T, key, value);
     return value;
   }
@@ -114,9 +118,7 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   Future<Map<Key, dynamic>> readAll() async {
     assert(_debugAssertNotDisposed());
 
-    final storage = _storage ?? await _storageFuture;
-    final all = await storage.readAll();
-
+    final all = await useStorage((s) => s.readAll());
     if (_logger != null) {
       all.forEach((key, value) => _logger.readValue(dynamic, key, value));
     }
@@ -127,9 +129,8 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   Future<bool> clear() async {
     assert(_debugAssertNotDisposed());
 
-    final storage = _storage ?? await _storageFuture;
     final keys = (await readAll()).keys;
-    final result = await storage.clear();
+    final result = await useStorage((s) => s.clear());
 
     // All values are set to null
     if (_logger != null) {
@@ -148,9 +149,9 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   @override
   Future<bool> remove(Key key) async {
     assert(_debugAssertNotDisposed());
+    assert(key != null);
 
-    final storage = _storage ?? await _storageFuture;
-    final result = await storage.remove(key);
+    final result = await useStorage((s) => s.remove(key));
 
     _logger?.writeValue(dynamic, key, null, result);
     if (result ?? false) {
@@ -163,9 +164,10 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   @override
   Future<bool> write<T>(Key key, T value, Encoder<T> encoder) async {
     assert(_debugAssertNotDisposed());
+    assert(key != null);
+    assert(encoder != null);
 
-    final storage = _storage ?? await _storageFuture;
-    final result = await storage.write(key, value, encoder);
+    final result = await useStorage((s) => s.write(key, value, encoder));
 
     _logger?.writeValue(T, key, value, result);
     if (result ?? false) {
@@ -180,6 +182,7 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   @override
   Stream<T> observe<T>(Key key, Decoder<T> decoder) {
     assert(_debugAssertNotDisposed());
+    assert(key != null);
 
     final stream = _keyValuesSubject
         .toSingleSubscriptionStream()
