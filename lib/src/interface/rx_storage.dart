@@ -12,7 +12,7 @@ abstract class RxStorage<Key> implements Storage<Key> {
     Logger logger,
     void Function() onDispose,
   ]) =>
-      RealRxStorage<Key>(storageOrFuture, logger, onDispose);
+      RealRxStorage<Key, Storage<Key>>(storageOrFuture, logger, onDispose);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
