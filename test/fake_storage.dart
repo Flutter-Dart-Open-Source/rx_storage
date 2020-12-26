@@ -75,7 +75,7 @@ class FakeStorage implements StringKeyStorage {
   Future<Map<String, dynamic>> readAll() => _wrap({..._map});
 }
 
-class FakeRxStorage extends RealRxStorage<String>
+class FakeRxStorage extends RealRxStorage<String, StringKeyStorage>
     implements StringKeyRxStorage {
   final FutureOr<StringKeyStorage> storageOrFuture;
   final Logger logger;

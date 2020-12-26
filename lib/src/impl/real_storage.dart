@@ -13,7 +13,7 @@ import '../stream_extensions/map_not_null.dart';
 import '../stream_extensions/single_subscription.dart';
 
 /// Default [RxStorage] implementation.
-class RealRxStorage<Key> implements RxStorage<Key> {
+class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   /// Trigger subject
   final _keyValuesSubject = PublishSubject<Map<Key, dynamic>>();
 
@@ -25,10 +25,10 @@ class RealRxStorage<Key> implements RxStorage<Key> {
   StreamSubscription<Map<Key, dynamic>> _subscription;
 
   /// Nullable.
-  Storage<Key> _storage;
+  S _storage;
 
   /// Nullable.
-  Future<Storage<Key>> _storageFuture;
+  Future<S> _storageFuture;
 
   /// Nullable
   final Logger _logger;
@@ -38,11 +38,11 @@ class RealRxStorage<Key> implements RxStorage<Key> {
 
   /// Construct a [RealRxStorage].
   RealRxStorage(
-    FutureOr<Storage<Key>> storageOrFuture, [
+    FutureOr<S> storageOrFuture, [
     this._logger,
     this._onDispose,
   ]) : assert(storageOrFuture != null) {
-    if (storageOrFuture is Future<Storage<Key>>) {
+    if (storageOrFuture is Future<S>) {
       _storageFuture = storageOrFuture.then((value) => _storage = value);
     } else {
       _storageFuture = null;
@@ -92,7 +92,7 @@ class RealRxStorage<Key> implements RxStorage<Key> {
 
   /// TODO
   @protected
-  Future<R> useStorage<R>(Future<R> Function(Storage<Key>) block) =>
+  Future<R> useStorage<R>(Future<R> Function(S) block) =>
       _storage != null ? block(_storage) : _storageFuture.then(block);
 
   // Get and set methods (implements [Storage])
