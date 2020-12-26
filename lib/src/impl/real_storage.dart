@@ -13,7 +13,8 @@ import '../stream_extensions/map_not_null.dart';
 import '../stream_extensions/single_subscription.dart';
 
 /// Default [RxStorage] implementation.
-class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
+class RealRxStorage<Key, Options, S extends Storage<Key, Options>>
+    implements RxStorage<Key, Options> {
   /// Trigger subject
   final _keyValuesSubject = PublishSubject<Map<Key, dynamic>>();
 
@@ -98,29 +99,29 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   // Get and set methods (implements [Storage])
 
   @override
-  Future<bool> containsKey(Key key) async {
+  Future<bool> containsKey(Key key, [Options options]) async {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return useStorage((s) => s.containsKey(key));
+    return useStorage((s) => s.containsKey(key, options));
   }
 
   @override
-  Future<T> read<T>(Key key, Decoder<T> decoder) async {
+  Future<T> read<T>(Key key, Decoder<T> decoder, [Options options]) async {
     assert(_debugAssertNotDisposed());
     assert(key != null);
     assert(decoder != null);
 
-    final value = await useStorage((s) => s.read(key, decoder));
+    final value = await useStorage((s) => s.read(key, decoder, options));
     _logger?.readValue(T, key, value);
     return value;
   }
 
   @override
-  Future<Map<Key, dynamic>> readAll() async {
+  Future<Map<Key, dynamic>> readAll([Options options]) async {
     assert(_debugAssertNotDisposed());
 
-    final all = await useStorage((s) => s.readAll());
+    final all = await useStorage((s) => s.readAll(options));
     if (_logger != null) {
       all.forEach(
           (key, dynamic value) => _logger.readValue(dynamic, key, value));
@@ -129,11 +130,11 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   }
 
   @override
-  Future<bool> clear() async {
+  Future<bool> clear([Options options]) async {
     assert(_debugAssertNotDisposed());
 
     final keys = (await readAll()).keys;
-    final result = await useStorage((s) => s.clear());
+    final result = await useStorage((s) => s.clear(options));
 
     // All values are set to null
     if (_logger != null) {
@@ -150,11 +151,11 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   }
 
   @override
-  Future<bool> remove(Key key) async {
+  Future<bool> remove(Key key, [Options options]) async {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    final result = await useStorage((s) => s.remove(key));
+    final result = await useStorage((s) => s.remove(key, options));
 
     _logger?.writeValue(dynamic, key, null, result);
     if (result) {
@@ -165,12 +166,14 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   }
 
   @override
-  Future<bool> write<T>(Key key, T value, Encoder<T> encoder) async {
+  Future<bool> write<T>(Key key, T value, Encoder<T> encoder,
+      [Options options]) async {
     assert(_debugAssertNotDisposed());
     assert(key != null);
     assert(encoder != null);
 
-    final result = await useStorage((s) => s.write(key, value, encoder));
+    final result =
+        await useStorage((s) => s.write(key, value, encoder, options));
 
     _logger?.writeValue(T, key, value, result);
     if (result) {
@@ -183,7 +186,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   // Get streams (implements [RxStorage])
 
   @override
-  Stream<T> observe<T>(Key key, Decoder<T> decoder) {
+  Stream<T> observe<T>(Key key, Decoder<T> decoder, [Options options]) {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
@@ -193,8 +196,9 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
             ? KeyAndValue<Key, dynamic>(key, map[key])
             : null)
         .startWith(null) // Dummy value to trigger initial load.
-        .asyncMap<T>((entry) =>
-            entry == null ? read<T>(key, decoder) : entry.value as FutureOr<T>);
+        .asyncMap<T>((entry) => entry == null
+            ? read<T>(key, decoder, options)
+            : entry.value as FutureOr<T>);
 
     if (_logger == null) {
       return stream;
@@ -207,13 +211,13 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   }
 
   @override
-  Stream<Map<Key, dynamic>> observeAll() {
+  Stream<Map<Key, dynamic>> observeAll([Options options]) {
     assert(_debugAssertNotDisposed());
 
     return _keyValuesSubject
         .toSingleSubscriptionStream()
         .startWith(null)
-        .asyncMap((_) => readAll());
+        .asyncMap((_) => readAll(options));
   }
 
   @override

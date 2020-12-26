@@ -37,7 +37,7 @@ class User {
   int get hashCode => id.hashCode ^ name.hashCode;
 }
 
-extension RxStoreageExtensionsForUser on RxStorage<String> {
+extension RxStoreageExtensionsForUser on RxStorage<String, void> {
   Future<User> readUser() => read('User', _toUser);
 
   Future<bool> writeUser(User user) => write<User>('User', user, _toString);

@@ -2,7 +2,7 @@ import 'package:rx_storage/rx_storage.dart';
 
 T _identity<T>(T t) => t;
 
-extension RxCompatExtensions on RxStorage<String> {
+extension RxCompatExtensions on RxStorage<String, void> {
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
   Stream<dynamic> getStream(String key) => observe<dynamic>(key, _identity);
@@ -42,7 +42,7 @@ extension RxCompatExtensions on RxStorage<String> {
       observeAll().map((event) => event.keys.toSet());
 }
 
-extension CompatExtensions on Storage<String> {
+extension CompatExtensions on Storage<String, void> {
   /// Reads a value of any type from persistent storage.
   Future<dynamic> get(String key) => read<dynamic>(key, _identity);
 

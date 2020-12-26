@@ -7,12 +7,12 @@ import 'utils/synchronous_future.dart';
 
 Future<T> _wrap<T>(T value) => SynchronousFuture(value);
 
-abstract class StringKeyStorage extends Storage<String> {
+abstract class StringKeyStorage extends Storage<String, void> {
   Future<void> reload();
 }
 
 abstract class StringKeyRxStorage extends StringKeyStorage
-    implements RxStorage<String> {}
+    implements RxStorage<String, void> {}
 
 class FakeStorage implements StringKeyStorage {
   Map<String, dynamic> _map;
@@ -42,16 +42,17 @@ class FakeStorage implements StringKeyStorage {
   //
 
   @override
-  Future<bool> clear() {
+  Future<bool> clear([void _]) {
     _map.clear();
     return _wrap(true);
   }
 
   @override
-  Future<bool> containsKey(String key) => _wrap(_map.containsKey(key));
+  Future<bool> containsKey(String key, [void _]) =>
+      _wrap(_map.containsKey(key));
 
   @override
-  Future<bool> write<T>(String key, T value, Encoder<T> encoder) =>
+  Future<bool> write<T>(String key, T value, Encoder<T> encoder, [void _]) =>
       _setValue(key, encoder(value));
 
   @override
@@ -64,17 +65,18 @@ class FakeStorage implements StringKeyStorage {
   }
 
   @override
-  Future<bool> remove(String key) => _setValue(key, null);
+  Future<bool> remove(String key, [void _]) => _setValue(key, null);
 
   @override
-  Future<T> read<T>(String key, Decoder<T> decoder) =>
+  Future<T> read<T>(String key, Decoder<T> decoder, [void _]) =>
       _getValue<dynamic>(key).then(decoder);
 
   @override
-  Future<Map<String, dynamic>> readAll() => _wrap(<String, dynamic>{..._map});
+  Future<Map<String, dynamic>> readAll([void _]) =>
+      _wrap(<String, dynamic>{..._map});
 }
 
-class FakeRxStorage extends RealRxStorage<String, StringKeyStorage>
+class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage {
   FakeRxStorage(
     FutureOr<StringKeyStorage> storageOrFuture, [
