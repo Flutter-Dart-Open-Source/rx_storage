@@ -46,7 +46,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
       _storageFuture = storageOrFuture.then((value) => _storage = value);
     } else {
       _storageFuture = null;
-      _storage = storageOrFuture;
+      _storage = storageOrFuture as S;
     }
 
     if (_logger == null) {
@@ -56,7 +56,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
     _subscription = _keyValuesSubject.listen((map) {
       final pairs = [
         for (final entry in map.entries)
-          KeyAndValue(
+          KeyAndValue<Key, dynamic>(
             entry.key,
             entry.value,
           ),
@@ -122,7 +122,8 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
 
     final all = await useStorage((s) => s.readAll());
     if (_logger != null) {
-      all.forEach((key, value) => _logger.readValue(dynamic, key, value));
+      all.forEach(
+          (key, dynamic value) => _logger.readValue(dynamic, key, value));
     }
     return all;
   }
@@ -140,7 +141,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
         _logger.writeValue(dynamic, key, null, result);
       }
     }
-    if (result ?? false) {
+    if (result) {
       final map = {for (final k in keys) k: null};
       sendChange(map);
     }
@@ -156,8 +157,8 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
     final result = await useStorage((s) => s.remove(key));
 
     _logger?.writeValue(dynamic, key, null, result);
-    if (result ?? false) {
-      sendChange({key: null});
+    if (result) {
+      sendChange(<Key, dynamic>{key: null});
     }
 
     return result;
@@ -172,8 +173,8 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
     final result = await useStorage((s) => s.write(key, value, encoder));
 
     _logger?.writeValue(T, key, value, result);
-    if (result ?? false) {
-      sendChange({key: value});
+    if (result) {
+      sendChange(<Key, dynamic>{key: value});
     }
 
     return result;
@@ -188,18 +189,20 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
 
     final stream = _keyValuesSubject
         .toSingleSubscriptionStream()
-        .mapNotNull(
-            (map) => map.containsKey(key) ? KeyAndValue(key, map[key]) : null)
+        .mapNotNull((map) => map.containsKey(key)
+            ? KeyAndValue<Key, dynamic>(key, map[key])
+            : null)
         .startWith(null) // Dummy value to trigger initial load.
         .asyncMap<T>((entry) =>
-            entry == null ? read<T>(key, decoder) : entry.value as T);
+            entry == null ? read<T>(key, decoder) : entry.value as FutureOr<T>);
 
     if (_logger == null) {
       return stream;
     }
 
     return stream
-        .doOnData((value) => _logger.doOnDataStream(KeyAndValue(key, value)))
+        .doOnData(
+            (value) => _logger.doOnDataStream(KeyAndValue<Key, T>(key, value)))
         .doOnError((e, StackTrace s) => _logger.doOnErrorStream(e, s));
   }
 

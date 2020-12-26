@@ -18,9 +18,10 @@ class FakeStorage implements StringKeyStorage {
   Map<String, dynamic> _map;
   Map<String, dynamic> _pendingMap;
 
-  FakeStorage(Map<String, dynamic> map) : _map = Map.of(map);
+  FakeStorage(Map<String, dynamic> map) : _map = Map<String, dynamic>.of(map);
 
-  set map(Map<String, dynamic> map) => _pendingMap = Map.of(map);
+  set map(Map<String, dynamic> map) =>
+      _pendingMap = Map<String, dynamic>.of(map);
 
   Future<bool> _setValue(String key, dynamic value) {
     if (value is List<String>) {
@@ -33,9 +34,7 @@ class FakeStorage implements StringKeyStorage {
 
   Future<T> _getValue<T>(String key) {
     final value = _map[key] as T;
-    return value is List<String>
-        ? _wrap(value.toList() as dynamic)
-        : _wrap(value);
+    return value is List<String> ? _wrap(value.toList() as T) : _wrap(value);
   }
 
   //
@@ -69,20 +68,17 @@ class FakeStorage implements StringKeyStorage {
 
   @override
   Future<T> read<T>(String key, Decoder<T> decoder) =>
-      _getValue(key).then(decoder);
+      _getValue<dynamic>(key).then(decoder);
 
   @override
-  Future<Map<String, dynamic>> readAll() => _wrap({..._map});
+  Future<Map<String, dynamic>> readAll() => _wrap(<String, dynamic>{..._map});
 }
 
 class FakeRxStorage extends RealRxStorage<String, StringKeyStorage>
     implements StringKeyRxStorage {
-  final FutureOr<StringKeyStorage> storageOrFuture;
-  final Logger logger;
-
   FakeRxStorage(
-    this.storageOrFuture, [
-    this.logger,
+    FutureOr<StringKeyStorage> storageOrFuture, [
+    Logger logger,
     void Function() onDispose,
   ]) : super(
           storageOrFuture,
@@ -92,13 +88,7 @@ class FakeRxStorage extends RealRxStorage<String, StringKeyStorage>
 
   @override
   Future<void> reload() async {
-    final s = await storageOrFuture;
-    await s.reload();
-
-    final map = await s.readAll();
-    sendChange(map);
-    if (logger != null) {
-      map.forEach((key, value) => logger.readValue(dynamic, key, value));
-    }
+    await useStorage((s) => s.reload());
+    sendChange(await readAll());
   }
 }

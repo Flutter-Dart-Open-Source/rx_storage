@@ -13,7 +13,7 @@ void main() {
         // Add to log instead of printing to stdout
         logs.add(line);
       });
-      return Zone.current.fork(specification: spec).run(testFn);
+      return Zone.current.fork(specification: spec).run<dynamic>(testFn);
     };
   }
 

@@ -5,35 +5,36 @@ T _identity<T>(T t) => t;
 extension RxCompatExtensions on RxStorage<String> {
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
-  Stream<dynamic> getStream(String key) => observe(key, _identity);
+  Stream<dynamic> getStream(String key) => observe<dynamic>(key, _identity);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a bool.
-  Stream<bool> getBoolStream(String key) => observe(key, (s) => s as bool);
+  Stream<bool> getBoolStream(String key) =>
+      observe(key, (dynamic s) => s as bool);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a double.
   Stream<double> getDoubleStream(String key) =>
-      observe(key, (s) => s as double);
+      observe(key, (dynamic s) => s as double);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a int.
-  Stream<int> getIntStream(String key) => observe(key, (s) => s as int);
+  Stream<int> getIntStream(String key) => observe(key, (dynamic s) => s as int);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a String.
   Stream<String> getStringStream(String key) =>
-      observe(key, (s) => s as String);
+      observe(key, (dynamic s) => s as String);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a string set.
   Stream<List<String>> getStringListStream(String key) =>
-      observe(key, (s) => s as List<String>);
+      observe(key, (dynamic s) => s as List<String>);
 
   /// Return [Stream] that will emit all keys read from persistent storage.
   /// It will automatic emit all keys when any value was changed.
@@ -43,19 +44,19 @@ extension RxCompatExtensions on RxStorage<String> {
 
 extension CompatExtensions on Storage<String> {
   /// Reads a value of any type from persistent storage.
-  Future<dynamic> get(String key) => read(key, _identity);
+  Future<dynamic> get(String key) => read<dynamic>(key, _identity);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a bool.
-  Future<bool> getBool(String key) => read(key, (s) => s as bool);
+  Future<bool> getBool(String key) => read(key, (dynamic s) => s as bool);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a double.
-  Future<double> getDouble(String key) => read(key, (s) => s as double);
+  Future<double> getDouble(String key) => read(key, (dynamic s) => s as double);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a int.
-  Future<int> getInt(String key) => read(key, (s) => s as int);
+  Future<int> getInt(String key) => read(key, (dynamic s) => s as int);
 
   /// Returns all keys in the persistent storage.
   Future<Set<String>> getKeys() =>
@@ -63,12 +64,12 @@ extension CompatExtensions on Storage<String> {
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a String.
-  Future<String> getString(String key) => read(key, (s) => s as String);
+  Future<String> getString(String key) => read(key, (dynamic s) => s as String);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a string set.
   Future<List<String>> getStringList(String key) =>
-      read(key, (s) => s as List<String>);
+      read(key, (dynamic s) => s as List<String>);
 
   /// Saves a boolean [value] to persistent storage in the background.
   ///
