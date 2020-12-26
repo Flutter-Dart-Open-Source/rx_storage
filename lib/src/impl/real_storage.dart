@@ -85,7 +85,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
   void sendChange(Map<Key, dynamic> map) {
     try {
       _keyValuesSubject.add(map);
-    } catch (e) {
+    } on StateError {
       assert(_debugAssertNotDisposed());
     }
   }
