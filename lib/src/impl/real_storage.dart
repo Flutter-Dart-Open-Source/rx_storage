@@ -90,7 +90,7 @@ class RealRxStorage<Key, S extends Storage<Key>> implements RxStorage<Key> {
     }
   }
 
-  /// TODO
+  /// Calling [block] with [S] as argument.
   @protected
   Future<R> useStorage<R>(Future<R> Function(S) block) =>
       _storage != null ? block(_storage) : _storageFuture.then(block);
