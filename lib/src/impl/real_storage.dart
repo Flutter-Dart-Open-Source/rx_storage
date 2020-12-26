@@ -19,6 +19,8 @@ class RealRxStorage<Key> implements RxStorage<Key> {
 
   final _disposeMemo = AsyncMemoizer<void>();
 
+  var _isDisposed = false;
+
   /// Logger subscription. Nullable
   StreamSubscription<Map<Key, dynamic>> _subscription;
 
@@ -69,7 +71,7 @@ class RealRxStorage<Key> implements RxStorage<Key> {
 
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_disposeMemo.hasRun) {
+      if (_isDisposed && _disposeMemo.hasRun) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }
@@ -227,6 +229,7 @@ class RealRxStorage<Key> implements RxStorage<Key> {
         );
       }
 
+      _isDisposed = true;
       _onDispose?.call();
     });
   }
