@@ -1,33 +1,42 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
+import '../utils/compat.dart';
+import '../utils/user.dart';
 
 void main() {
   group('Storage', () {
-    const kTestValues = <String, dynamic>{
+    const user1 = User(1, 'Name#1');
+    const user2 = User(2, 'Name#2');
+
+    final kTestValues = <String, dynamic>{
       'String': 'hello world',
       'bool': true,
       'int': 42,
       'double': 3.14159,
       'List': <String>['foo', 'bar'],
+      'User': jsonEncode(user1),
     };
 
-    const kTestValues2 = <String, dynamic>{
+    final kTestValues2 = <String, dynamic>{
       'String': 'goodbye world',
       'bool': false,
       'int': 1337,
       'double': 2.71828,
       'List': <String>['baz', 'quox'],
+      'User': jsonEncode(user2),
     };
 
     FakeStorage storage;
-    RxStorage rxStorage;
+    FakeRxStorage rxStorage;
 
     setUp(() {
       storage = FakeStorage(kTestValues);
-      rxStorage = RxStorage(storage, const DefaultLogger());
+      rxStorage = FakeRxStorage(storage, const DefaultLogger());
     });
 
     tearDown(() async {
@@ -45,15 +54,17 @@ void main() {
       expect(await rxStorage.getInt('int'), kTestValues['int']);
       expect(await rxStorage.getDouble('double'), kTestValues['double']);
       expect(await rxStorage.getStringList('List'), kTestValues['List']);
+      expect(await rxStorage.readUser(), user1);
     });
 
     test('writing', () async {
       await Future.wait(<Future<bool>>[
-        rxStorage.setString('String', kTestValues2['String']),
-        rxStorage.setBool('bool', kTestValues2['bool']),
-        rxStorage.setInt('int', kTestValues2['int']),
-        rxStorage.setDouble('double', kTestValues2['double']),
-        rxStorage.setStringList('List', kTestValues2['List'])
+        rxStorage.setString('String', kTestValues2['String'] as String),
+        rxStorage.setBool('bool', kTestValues2['bool'] as bool),
+        rxStorage.setInt('int', kTestValues2['int'] as int),
+        rxStorage.setDouble('double', kTestValues2['double'] as double),
+        rxStorage.setStringList('List', kTestValues2['List'] as List<String>),
+        rxStorage.writeUser(user2),
       ]);
 
       expect(await rxStorage.getString('String'), kTestValues2['String']);
@@ -61,6 +72,7 @@ void main() {
       expect(await rxStorage.getInt('int'), kTestValues2['int']);
       expect(await rxStorage.getDouble('double'), kTestValues2['double']);
       expect(await rxStorage.getStringList('List'), kTestValues2['List']);
+      expect(await rxStorage.readUser(), user2);
     });
 
     test('removing', () async {
@@ -89,10 +101,11 @@ void main() {
       expect(await rxStorage.getInt('int'), null);
       expect(await rxStorage.getDouble('double'), null);
       expect(await rxStorage.getStringList('List'), null);
+      expect(await rxStorage.readUser(), null);
     });
 
     test('reloading', () async {
-      await rxStorage.setString('String', kTestValues['String']);
+      await rxStorage.setString('String', kTestValues['String'] as String);
       expect(await rxStorage.getString('String'), kTestValues['String']);
 
       storage.map = kTestValues2;

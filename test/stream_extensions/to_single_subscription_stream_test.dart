@@ -22,7 +22,7 @@ void main() {
 
       expect(
         singleSubscriptionStream,
-        emitsInOrder([1, 2, 3, emitsDone]),
+        emitsInOrder(<dynamic>[1, 2, 3, emitsDone]),
       );
 
       streamController.add(1);

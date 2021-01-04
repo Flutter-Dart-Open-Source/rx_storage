@@ -15,19 +15,19 @@ void main() {
               .mapNotNull((i) => i.isOdd ? null : i + 1);
       await expectLater(
         stream,
-        emitsInOrder([1, 3, 5, 7, 9, emitsDone]),
+        emitsInOrder(<dynamic>[1, 3, 5, 7, 9, emitsDone]),
       );
     });
 
     test('Rx.mapNotNull.shouldThrowA', () {
       expect(
-        () => Stream.value(42).mapNotNull(null),
+        () => Stream.value(42).mapNotNull<int>(null),
         throwsA(isA<AssertionError>()),
       );
     });
 
     test('Rx.mapNotNull.shouldThrowB', () async {
-      final stream = Stream.error(Exception()).mapNotNull((_) => true);
+      final stream = Stream<int>.error(Exception()).mapNotNull((_) => true);
       await expectLater(
         stream,
         emitsError(isA<Exception>()),
@@ -44,7 +44,7 @@ void main() {
       });
       expect(
         stream,
-        emitsInOrder([
+        emitsInOrder(<dynamic>[
           1,
           2,
           emitsError(isA<Exception>()),

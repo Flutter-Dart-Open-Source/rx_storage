@@ -3,6 +3,7 @@
 /// More dartdocs go here.
 library rx_storage;
 
+export 'src/impl/real_storage.dart';
 export 'src/interface/rx_storage.dart';
 export 'src/interface/storage.dart';
 export 'src/logger/default_logger.dart';
