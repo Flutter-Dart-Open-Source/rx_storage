@@ -4,17 +4,17 @@ import '../model/key_and_value.dart';
 /// Log messages about operations (such as read, write, value change) and stream events.
 abstract class Logger {
   /// Called when values have changed.
-  void keysChanged(Iterable<KeyAndValue<Object?>> pairs);
+  void keysChanged(Iterable<KeyAndValue<Object, Object?>> pairs);
 
   /// Called when the stream emits an item.
-  void doOnDataStream(KeyAndValue<Object?> pair);
+  void doOnDataStream(KeyAndValue<Object, Object?> pair);
 
   /// Called when the stream emits an error.
   void doOnErrorStream(Object error, StackTrace stackTrace);
 
   /// Called when reading value from [Storage].
-  void readValue(Type type, String key, Object? value);
+  void readValue(Type type, Object key, Object? value);
 
   /// Called when writing value to [Storage].
-  void writeValue(Type type, String key, Object? value, bool writeResult);
+  void writeValue(Type type, Object key, Object? value, bool writeResult);
 }

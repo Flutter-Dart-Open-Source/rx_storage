@@ -1,31 +1,44 @@
+import 'dart:convert';
+
 import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
+import '../utils/compat.dart';
+import '../utils/user.dart';
 
 void main() {
   group('Test Stream', () {
-    const kTestValues = <String, dynamic>{
+    const user1 = User(1, 'Name#1');
+    const user2 = User(2, 'Name#2');
+    const user3 = User(3, 'Name#3');
+
+    final kTestValues = <String, dynamic>{
       'String': 'hello world',
       'bool': true,
       'int': 42,
       'double': 3.14159,
       'List': <String>['foo', 'bar'],
+      'User': jsonEncode(user1),
     };
 
     late FakeStorage fakeStorage;
-    late RxStorage rxStorage;
+    late FakeRxStorage rxStorage;
 
     setUp(() {
       fakeStorage = FakeStorage(kTestValues);
 
-      rxStorage = RxStorage(
+      rxStorage = FakeRxStorage(
         fakeStorage,
-        // const DefaultLogger(),
+        const DefaultLogger(),
       );
     });
 
-    tearDown(() async => await rxStorage.dispose());
+    tearDown(() {
+      try {
+        rxStorage.dispose();
+      } catch (_) {}
+    });
 
     test(
       'Stream will emit error when read value is not valid type, or emit null when value is not set',
@@ -34,7 +47,7 @@ void main() {
             rxStorage.getIntStream('bool'); // Actual: Stream<bool>
         await expectLater(
           intStream,
-          emitsAnyOf([
+          emitsAnyOf(<dynamic>[
             isNull,
             emitsError(isA<TypeError>()),
           ]),
@@ -44,7 +57,7 @@ void main() {
             rxStorage.getStringListStream('String'); // Actual: Stream<String>
         await expectLater(
           listStringStream,
-          emitsAnyOf([
+          emitsAnyOf(<dynamic>[
             isNull,
             emitsError(isA<TypeError>()),
           ]),
@@ -63,7 +76,7 @@ void main() {
     test(
       'Stream will emit value as soon as possible after listen',
       () async {
-        await Future.wait([
+        await Future.wait(<Future<void>>[
           expectLater(
             rxStorage.getIntStream('int'),
             emits(anything),
@@ -85,6 +98,10 @@ void main() {
             emits(anything),
           ),
           expectLater(
+            rxStorage.observeUser(),
+            emits(anything),
+          ),
+          expectLater(
             rxStorage.getStream('No such key'),
             emits(isNull),
           ),
@@ -102,7 +119,7 @@ void main() {
         final streamBool = rxStorage.getBoolStream('bool');
         final expectStreamBoolFuture = expectLater(
           streamBool,
-          emitsInOrder([anything, false, true, false, true, false]),
+          emitsInOrder(<dynamic>[anything, false, true, false, true, false]),
         );
         await rxStorage.setBool('bool', false);
         await rxStorage.setBool('bool', true);
@@ -116,7 +133,7 @@ void main() {
         final streamDouble = rxStorage.getDoubleStream('double');
         final expectStreamDoubleFuture = expectLater(
           streamDouble,
-          emitsInOrder([anything, 0.3333, 1, 2, isNull, 3, isNull, 4]),
+          emitsInOrder(<dynamic>[anything, 0.3333, 1, 2, isNull, 3, isNull, 4]),
         );
         await rxStorage.setDouble('double', 0.3333);
         await rxStorage.setDouble('double', 1);
@@ -132,7 +149,7 @@ void main() {
         final streamInt = rxStorage.getIntStream('int');
         final expectStreamIntFuture = expectLater(
           streamInt,
-          emitsInOrder([anything, 1, isNull, 2, 3, isNull, 3, 2, 1]),
+          emitsInOrder(<dynamic>[anything, 1, isNull, 2, 3, isNull, 3, 2, 1]),
         );
         await rxStorage.setInt('int', 1);
         await rxStorage.setInt('int', null);
@@ -149,7 +166,7 @@ void main() {
         final streamString = rxStorage.getStringStream('String');
         final expectStreamStringFuture = expectLater(
           streamString,
-          emitsInOrder([anything, 'h', 'e', 'l', 'l', 'o', isNull]),
+          emitsInOrder(<dynamic>[anything, 'h', 'e', 'l', 'l', 'o', isNull]),
         );
         await rxStorage.setString('String', 'h');
         await rxStorage.setString('String', 'e');
@@ -164,7 +181,7 @@ void main() {
         final streamListString = rxStorage.getStringListStream('List');
         final expectStreamListStringFuture = expectLater(
           streamListString,
-          emitsInOrder([
+          emitsInOrder(<dynamic>[
             anything,
             <String>['1', '2', '3'],
             <String>['1', '2', '3', '4'],
@@ -189,12 +206,30 @@ void main() {
         await rxStorage.remove('List');
         await rxStorage.setStringList('List', ['done']);
 
-        await Future.wait([
+        ///
+        /// User
+        ///
+        final userStream = rxStorage.observeUser();
+        final expectUserFuture = expectLater(
+          userStream,
+          emitsInOrder(<dynamic>[
+            anything,
+            user2,
+            null,
+            user3,
+          ]),
+        );
+        await rxStorage.writeUser(user2);
+        await rxStorage.writeUser(null);
+        await rxStorage.writeUser(user3);
+
+        await Future.wait(<Future<void>>[
           expectStreamBoolFuture,
           expectStreamDoubleFuture,
           expectStreamIntFuture,
           expectStreamStringFuture,
           expectStreamListStringFuture,
+          expectUserFuture,
         ]);
       },
     );
@@ -214,28 +249,35 @@ void main() {
       );
 
       for (final v in expected.skip(1)) {
-        await rxStorage.setStringList('List', v);
-        await Future.delayed(Duration.zero);
+        await rxStorage.setStringList(
+          'List',
+          v as List<String>,
+        );
+        await Future<void>.delayed(Duration.zero);
       }
 
       // delay
-      await Future.delayed(const Duration(microseconds: 500));
+      await Future<void>.delayed(const Duration(microseconds: 500));
       await rxStorage.dispose();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-      // not emit but persisted
-      await rxStorage.setStringList(
-        'List',
-        <String>['after', 'dispose'],
-      );
-      // working fine
-      expect(
-        await rxStorage.getStringList('List'),
-        <String>['after', 'dispose'],
-      );
+      try {
+        // cannot use anymore
+        await rxStorage.setStringList(
+          'List',
+          <String>['after', 'dispose'],
+        );
+        // working fine
+        expect(
+          await rxStorage.getStringList('List'),
+          <String>['after', 'dispose'],
+        );
+      } catch (e) {
+        expect(e, isStateError);
+      }
 
       // timeout is 2 seconds
-      await Future.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(seconds: 2));
       expect(result.length, expected.length);
       expect(result.every((element) => element), isTrue);
     });
@@ -246,7 +288,7 @@ void main() {
       final later = expectLater(
         stream,
         emitsInOrder(
-          [
+          <dynamic>[
             anything,
             isNull,
           ],
@@ -264,7 +306,7 @@ void main() {
       final later = expectLater(
         stream,
         emitsInOrder(
-          [
+          <dynamic>[
             anything,
             ['AFTER RELOAD'],
             ['WORKING 1'],
@@ -273,14 +315,14 @@ void main() {
         ),
       );
 
-      fakeStorage.map = {
+      fakeStorage.map = <String, dynamic>{
         'List': ['AFTER RELOAD']
       };
       await rxStorage.reload(); // emits ['AFTER RELOAD']
 
       await rxStorage.setStringList('List', ['WORKING 1']); // emits ['WORKING']
 
-      fakeStorage.map = {
+      fakeStorage.map = <String, dynamic>{
         'List': ['WORKING 2'],
       };
       await rxStorage.reload(); // emits ['WORKING']
@@ -293,7 +335,7 @@ void main() {
 
       final future = expectLater(
         keysStream,
-        emitsInOrder([
+        emitsInOrder(<dynamic>[
           anything,
           anything,
           anything,

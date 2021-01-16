@@ -7,13 +7,13 @@ class DefaultLogger implements Logger {
   const DefaultLogger();
 
   @override
-  void keysChanged(Iterable<KeyAndValue<Object?>> pairs) {
+  void keysChanged(Iterable<KeyAndValue<Object, Object?>> pairs) {
     print(' ↓ Key changes');
     print(pairs.map((p) => '    → $p').join('\n'));
   }
 
   @override
-  void doOnDataStream(KeyAndValue<Object?> pair) =>
+  void doOnDataStream(KeyAndValue<Object, Object?> pair) =>
       print(' → Stream emits data: $pair');
 
   @override
@@ -21,10 +21,10 @@ class DefaultLogger implements Logger {
       print(' → Stream emits error: $error, $stackTrace');
 
   @override
-  void readValue(Type type, String key, Object? value) =>
+  void readValue(Type type, Object key, Object? value) =>
       print(" → Read value: type $type, key '$key' → $value");
 
   @override
-  void writeValue(Type type, String key, Object? value, bool writeResult) => print(
+  void writeValue(Type type, Object key, Object? value, bool writeResult) => print(
       " → Write value: type $type, key '$key', value $value  → result $writeResult");
 }

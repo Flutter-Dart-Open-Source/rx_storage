@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:rx_storage/rx_storage.dart';
 
 import 'fake_storage.dart';
+import 'utils/compat.dart';
 
 void main() async {
   const kTestValues = <String, dynamic>{
@@ -24,7 +25,12 @@ void main() async {
 
   final storage = FakeStorage(kTestValues);
   final rxStorage = RxStorage(
-      Future.delayed(const Duration(milliseconds: 100), () => storage));
+    Future.delayed(
+      const Duration(milliseconds: 100),
+      () => storage,
+    ),
+    const DefaultLogger(),
+  );
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
@@ -40,6 +46,10 @@ void main() async {
 
   stopwatch.stop();
   print(stopwatch.elapsedMilliseconds);
+
+  //
+  //
+  //
 
   final completer = Completer<void>.sync();
   stopwatch
@@ -60,14 +70,4 @@ void main() async {
   }
 
   await completer.future;
-
-  /*for (var i = 0; i < 10000; i++) {
-      await Future.value(1)
-          .then((value) => SynchronousFuture(value + 1))
-          .then((value) {})
-          .then((value) {})
-          .then((value) => SynchronousFuture('22'));
-      print(i);
-    }
-    print('done');*/
 }

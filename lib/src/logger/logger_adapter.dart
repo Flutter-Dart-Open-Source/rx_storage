@@ -7,17 +7,17 @@ class LoggerAdapter implements Logger {
   const LoggerAdapter();
 
   @override
-  void doOnDataStream(KeyAndValue<Object?> pair) {}
+  void doOnDataStream(KeyAndValue<Object, Object?> pair) {}
 
   @override
   void doOnErrorStream(Object error, StackTrace stackTrace) {}
 
   @override
-  void keysChanged(Iterable<KeyAndValue<Object?>> pairs) {}
+  void keysChanged(Iterable<KeyAndValue<Object, Object?>> pairs) {}
 
   @override
-  void readValue(Type type, String key, Object? value) {}
+  void readValue(Type type, Object key, Object? value) {}
 
   @override
-  void writeValue(Type type, String key, Object? value, bool writeResult) {}
+  void writeValue(Type type, Object key, Object? value, bool writeResult) {}
 }

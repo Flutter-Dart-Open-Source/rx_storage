@@ -1,71 +1,32 @@
+/// Convert [T] to type that [Storage] can be persisted.
+/// This used in [Storage.write].
+typedef Encoder<T> = Object? Function(T);
+
+/// Convert storage persisted type to [T].
+/// This used in [Storage.read].
+typedef Decoder<T> = T Function(Object?);
+
 /// A persistent store for simple data. Data is persisted to disk asynchronously.
-abstract class Storage {
+abstract class Storage<Key extends Object, Options> {
   /// Returns a future complete with value true if the persistent storage
   /// contains the given [key].
-  Future<bool> containsKey(String key);
+  Future<bool> containsKey(Key key, [Options? options]);
 
   /// Reads a value of any type from persistent storage.
-  Future<Object?> get(String key);
-
-  /// Reads a value from persistent storage, return a future that completes
-  /// with an error if it's not a bool.
-  Future<bool?> getBool(String key);
-
-  /// Reads a value from persistent storage, return a future that completes
-  /// with an error if it's not a double.
-  Future<double?> getDouble(String key);
-
-  /// Reads a value from persistent storage, return a future that completes
-  /// with an error if it's not a int.
-  Future<int?> getInt(String key);
+  Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
+      [Options? options]);
 
   /// Returns all keys in the persistent storage.
-  Future<Set<String>> getKeys();
-
-  /// Reads a value from persistent storage, return a future that completes
-  /// with an error if it's not a String.
-  Future<String?> getString(String key);
-
-  /// Reads a value from persistent storage, return a future that completes
-  /// with an error if it's not a string set.
-  Future<List<String>?> getStringList(String key);
+  Future<Map<Key, Object?>> readAll([Options? options]);
 
   /// Completes with true once the storage for the app has been cleared.
-  Future<bool> clear();
-
-  /// Fetches the latest values from the host platform.
-  ///
-  /// Use this method to observe modifications that were made in native code
-  /// (without using the plugin) while the app is running.
-  Future<void> reload();
+  Future<bool> clear([Options? options]);
 
   /// Removes an entry from persistent storage.
-  Future<bool> remove(String key);
 
-  /// Saves a boolean [value] to persistent storage in the background.
-  ///
-  /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setBool(String key, bool? value);
+  Future<bool> remove(Key key, [Options? options]);
 
-  /// Saves a double [value] to persistent storage in the background.
-  ///
-  /// Android doesn't support storing doubles, so it will be stored as a float.
-  ///
-  /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setDouble(String key, double? value);
-
-  /// Saves an integer [value] to persistent storage in the background.
-  ///
-  /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setInt(String key, int? value);
-
-  /// Saves a string [value] to persistent storage in the background.
-  ///
-  /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setString(String key, String? value);
-
-  /// Saves a list of strings [value] to persistent storage in the background.
-  ///
-  /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setStringList(String key, List<String>? value);
+  /// Saves a [value] to persistent storage.
+  Future<bool> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
+      [Options? options]);
 }
