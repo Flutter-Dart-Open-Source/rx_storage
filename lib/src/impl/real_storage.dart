@@ -32,7 +32,6 @@ class RealRxStorage<Key extends Object, Options,
   /// Nullable.
   S? _storage;
 
-  /// Nullable.
   late Future<S> _storageFuture;
 
   /// Nullable
