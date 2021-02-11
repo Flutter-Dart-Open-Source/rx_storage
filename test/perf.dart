@@ -29,23 +29,30 @@ void main() async {
       const Duration(milliseconds: 100),
       () => storage,
     ),
-    const DefaultLogger(),
+    null,
   );
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
+  final max = 100000;
+
+  // wake up
+  for (var i = 0; i < max / 2; i++) {
+    await rxStorage.get(list[i % list.length]);
+  }
 
   stopwatch
     ..reset()
     ..start();
-  print('Start...');
-  for (var i = 0; i < 10000; i++) {
+  print('>>> Start...');
+
+  for (var i = 0; i < max; i++) {
     await rxStorage.get(list[i % list.length]);
   }
-  print('End...');
 
   stopwatch.stop();
-  print(stopwatch.elapsedMilliseconds);
+  print('<<< End... ${stopwatch.elapsedMilliseconds}');
+  print('-------------------------------------------');
 
   //
   //
@@ -55,19 +62,19 @@ void main() async {
   stopwatch
     ..reset()
     ..start();
-  print('Start 2...');
-  rxStorage.getStringStream('key').listen((event) {
-    if (event == 10000.toString()) {
-      print('End 2...');
+  print('>>> Start...');
 
+  rxStorage.getStringStream('key').listen((event) {
+    if (event == max.toString()) {
       stopwatch.stop();
-      print(stopwatch.elapsedMilliseconds);
+      print('<<< End... ${stopwatch.elapsedMilliseconds}');
       completer.complete();
     }
   });
-  for (var i = 0; i <= 10000; i++) {
+  for (var i = 0; i <= max; i++) {
     await rxStorage.setString('key', i.toString());
   }
 
   await completer.future;
+  print('END');
 }

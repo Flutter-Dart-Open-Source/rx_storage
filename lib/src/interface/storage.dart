@@ -20,13 +20,12 @@ abstract class Storage<Key extends Object, Options> {
   Future<Map<Key, Object?>> readAll([Options? options]);
 
   /// Completes with true once the storage for the app has been cleared.
-  Future<bool> clear([Options? options]);
+  Future<void> clear([Options? options]);
 
   /// Removes an entry from persistent storage.
-
-  Future<bool> remove(Key key, [Options? options]);
+  Future<void> remove(Key key, [Options? options]);
 
   /// Saves a [value] to persistent storage.
-  Future<bool> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
+  Future<void> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
       [Options? options]);
 }

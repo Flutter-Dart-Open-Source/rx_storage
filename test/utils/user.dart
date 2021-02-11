@@ -40,7 +40,7 @@ class User {
 extension RxStoreageExtensionsForUser on RxStorage<String, void> {
   Future<User?> readUser() => read('User', _toUser);
 
-  Future<bool> writeUser(User? user) => write<User>('User', user, _toString);
+  Future<void> writeUser(User? user) => write<User>('User', user, _toString);
 
   Stream<User?> observeUser() => observe<User>('User', _toUser);
 }
@@ -49,7 +49,7 @@ User? _toUser(Object? s) {
   if (s == null) {
     return null;
   }
-  final map = (jsonDecode(s as String) as Map).cast<String, Object?>();
+  final map = jsonDecode(s as String) as Map<String, Object?>;
   return User.fromJson(map);
 }
 

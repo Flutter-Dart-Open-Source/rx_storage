@@ -42,7 +42,7 @@ class FakeStorage implements StringKeyStorage {
   //
 
   @override
-  Future<bool> clear([void _]) {
+  Future<void> clear([void _]) {
     _map.clear();
     return _wrap(true);
   }
@@ -52,7 +52,7 @@ class FakeStorage implements StringKeyStorage {
       _wrap(_map.containsKey(key));
 
   @override
-  Future<bool> write<T extends Object>(
+  Future<void> write<T extends Object>(
           String key, T? value, Encoder<T?> encoder,
           [void _]) =>
       _setValue(key, encoder(value));
@@ -67,7 +67,7 @@ class FakeStorage implements StringKeyStorage {
   }
 
   @override
-  Future<bool> remove(String key, [void _]) => _setValue(key, null);
+  Future<void> remove(String key, [void _]) => _setValue(key, null);
 
   @override
   Future<T?> read<T extends Object>(String key, Decoder<T?> decoder,
@@ -83,7 +83,7 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage {
   FakeRxStorage(
     FutureOr<StringKeyStorage> storageOrFuture, [
-    Logger? logger,
+    Logger<String, void>? logger,
     void Function()? onDispose,
   ]) : super(
           storageOrFuture,

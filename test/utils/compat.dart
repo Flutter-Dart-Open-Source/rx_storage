@@ -77,30 +77,30 @@ extension CompatExtensions on Storage<String, void> {
   /// Saves a boolean [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setBool(String key, bool? value) => write(key, value, _identity);
+  Future<void> setBool(String key, bool? value) => write(key, value, _identity);
 
   /// Saves a double [value] to persistent storage in the background.
   ///
   /// Android doesn't support storing doubles, so it will be stored as a float.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setDouble(String key, double? value) =>
+  Future<void> setDouble(String key, double? value) =>
       write(key, value, _identity);
 
   /// Saves an integer [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setInt(String key, int? value) => write(key, value, _identity);
+  Future<void> setInt(String key, int? value) => write(key, value, _identity);
 
   /// Saves a string [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setString(String key, String? value) =>
+  Future<void> setString(String key, String? value) =>
       write(key, value, _identity);
 
   /// Saves a list of strings [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setStringList(String key, List<String>? value) =>
+  Future<void> setStringList(String key, List<String>? value) =>
       write(key, value, _identity);
 }

@@ -58,7 +58,7 @@ void main() {
     });
 
     test('writing', () async {
-      await Future.wait(<Future<bool>>[
+      await Future.wait([
         rxStorage.setString('String', kTestValues2['String'] as String),
         rxStorage.setBool('bool', kTestValues2['bool'] as bool),
         rxStorage.setInt('int', kTestValues2['int'] as int),
