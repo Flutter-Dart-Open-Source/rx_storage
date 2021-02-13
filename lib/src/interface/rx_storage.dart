@@ -5,47 +5,28 @@ import '../logger/logger.dart';
 import 'storage.dart';
 
 /// Get [Stream]s by key from persistent storage.
-abstract class RxStorage implements Storage {
-  /// TODO
+abstract class RxStorage<Key extends Object, Options>
+    implements Storage<Key, Options> {
+  /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(
-    FutureOr<Storage> storageOrFuture, [
-    Logger? logger,
+    FutureOr<Storage<Key, Options>> storageOrFuture, [
+    Logger<Key, Options>? logger,
     void Function()? onDispose,
   ]) =>
-      RealRxStorage(storageOrFuture, logger, onDispose);
+      RealRxStorage<Key, Options, Storage<Key, Options>>(
+        storageOrFuture,
+        logger,
+        onDispose,
+      );
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
-  Stream<Object?> getStream(String key);
+  Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
+      [Options options]);
 
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with [key] was changed.
-  /// This stream will emit an error if it's not a bool.
-  Stream<bool?> getBoolStream(String key);
-
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with [key] was changed.
-  /// This stream will emit an error if it's not a double.
-  Stream<double?> getDoubleStream(String key);
-
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with [key] was changed.
-  /// This stream will emit an error if it's not a int.
-  Stream<int?> getIntStream(String key);
-
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with [key] was changed.
-  /// This stream will emit an error if it's not a String.
-  Stream<String?> getStringStream(String key);
-
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with [key] was changed.
-  /// This stream will emit an error if it's not a string set.
-  Stream<List<String>?> getStringListStream(String key);
-
-  /// Return [Stream] that will emit all keys read from persistent storage.
+  /// Return [Stream] that will emit all values associated with key read from persistent storage.
   /// It will automatic emit all keys when any value was changed.
-  Stream<Set<String>> getKeysStream();
+  Stream<Map<Key, Object?>> observeAll([Options options]);
 
   /// Clean up resources - Closes the streams.
   /// This method should be called when a [RxStorage] is no longer needed.
