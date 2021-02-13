@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
@@ -36,7 +35,7 @@ void main() {
 
     setUp(() {
       storage = FakeStorage(kTestValues);
-      rxStorage = FakeRxStorage(storage, const DefaultLogger());
+      rxStorage = FakeRxStorage(storage, const FakeDefaultLogger());
     });
 
     tearDown(() async {

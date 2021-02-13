@@ -44,9 +44,13 @@ class RealRxStorage<Key extends Object, Options,
     this._onDispose,
   ]) : assert(storageOrFuture != null) {
     if (storageOrFuture is Future<S>) {
-      _storageFuture = storageOrFuture.then((value) => _storage = value);
+      _storageFuture = storageOrFuture.then((value) {
+        assert(_storage is! RxStorage<Key, Options>);
+        return _storage = value;
+      });
     } else {
       _storage = storageOrFuture;
+      assert(_storage is! RxStorage<Key, Options>);
     }
 
     _keyValuesSubject.disposedBy(_bag);
@@ -104,33 +108,46 @@ class RealRxStorage<Key extends Object, Options,
   }
 
   /// Calling [block] with [S] as argument.
-  Future<R> _useStorageWithHandlers<R>(
-    Future<R> Function(S) block,
-    void Function(R) onSuccess,
-    void Function(RxStorageError) onFailure,
-  ) async {
-    try {
-      final value = await useStorage(block);
-      onSuccess(value);
-      return value;
-    } catch (e, s) {
-      onFailure(RxStorageError(e, s));
-      rethrow;
-    }
-  }
+  Future<R> _useStorage<R>(Future<R> Function(S) block) =>
+      _storage?.let(block) ?? _storageFuture.then(block);
 
   //
   // Protected
   //
 
+  /// Calling [block] with [S] as argument.
+  Future<R> useStorageWithHandlers<R>(
+    Future<R> Function(S) block,
+    FutureOr<void> Function(R, S) onSuccess,
+    FutureOr<void> Function(RxStorageError, S) onFailure,
+  ) async {
+    assert(_debugAssertNotDisposed());
+    assert(block != null);
+    assert(onSuccess != null);
+    assert(onFailure != null);
+
+    final storage = _storage ?? await _storageFuture;
+
+    try {
+      final value = await block(storage);
+      final futureOrVoid = onSuccess(value, storage);
+      if (futureOrVoid is Future<void>) {
+        await futureOrVoid;
+      }
+      return value;
+    } catch (e, s) {
+      final futureOrVoid = onFailure(RxStorageError(e, s), storage);
+      if (futureOrVoid is Future<void>) {
+        await futureOrVoid;
+      }
+      rethrow;
+    }
+  }
+
   /// Add changed map to subject to trigger.
   @protected
   void sendChange(Map<Key, Object?> map) {
     assert(_debugAssertNotDisposed());
-
-    if (map.isEmpty) {
-      return;
-    }
 
     try {
       _keyValuesSubject.add(map);
@@ -139,10 +156,13 @@ class RealRxStorage<Key extends Object, Options,
     }
   }
 
-  /// Calling [block] with [S] as argument.
+  /// Log event.
   @protected
-  Future<R> useStorage<R>(Future<R> Function(S) block) =>
-      _storage?.let(block) ?? _storageFuture.then(block);
+  void log(LoggerEvent<Key, Options> event) {
+    if (_isLogEnabled) {
+      _publishLog(event);
+    }
+  }
 
   //
   // Get and set methods (implements [Storage])
@@ -153,7 +173,7 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return await useStorage((s) => s.containsKey(key, options));
+    return await _useStorage((s) => s.containsKey(key, options));
   }
 
   @override
@@ -163,15 +183,15 @@ class RealRxStorage<Key extends Object, Options,
     assert(key != null);
     assert(decoder != null);
 
-    return _useStorageWithHandlers(
+    return useStorageWithHandlers(
       (s) => s.read(key, decoder, options),
-      (value) {
+      (value, _) {
         if (_isLogEnabled) {
           _publishLog(
               ReadValueSuccessEvent(KeyAndValue(key, value), T, options));
         }
       },
-      (error) {
+      (error, _) {
         if (_isLogEnabled) {
           _publishLog(ReadValueFailureEvent(key, T, error, options));
         }
@@ -183,14 +203,14 @@ class RealRxStorage<Key extends Object, Options,
   Future<Map<Key, Object?>> readAll([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _useStorageWithHandlers(
+    return useStorageWithHandlers(
       (s) => s.readAll(options),
-      (value) {
+      (value, _) {
         if (_isLogEnabled) {
           _publishLog(ReadAllSuccessEvent(_toList(value), options));
         }
       },
-      (error) {
+      (error, _) {
         if (_isLogEnabled) {
           _publishLog(ReadAllFailureEvent(error, options));
         }
@@ -202,17 +222,17 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> clear([Options? options]) async {
     assert(_debugAssertNotDisposed());
 
-    final keys = (await useStorage((s) => s.readAll(options))).keys;
+    final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
-    return await _useStorageWithHandlers(
+    return await useStorageWithHandlers(
       (s) => s.clear(options),
-      (_) {
+      (_, __) {
         sendChange({for (final k in keys) k: null});
         if (_isLogEnabled) {
           _publishLog(ClearSuccessEvent(options));
         }
       },
-      (error) {
+      (error, _) {
         if (_isLogEnabled) {
           _publishLog(ClearFailureEvent(error, options));
         }
@@ -225,15 +245,15 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return _useStorageWithHandlers(
+    return useStorageWithHandlers(
       (s) => s.remove(key, options),
-      (_) {
+      (_, __) {
         sendChange({key: null});
         if (_isLogEnabled) {
           _publishLog(RemoveSuccessEvent(key, options));
         }
       },
-      (error) {
+      (error, _) {
         if (_isLogEnabled) {
           _publishLog(RemoveFailureEvent(key, options, error));
         }
@@ -248,17 +268,18 @@ class RealRxStorage<Key extends Object, Options,
     assert(key != null);
     assert(encoder != null);
 
-    return _useStorageWithHandlers(
+    return useStorageWithHandlers(
       (s) => s.write(key, value, encoder, options),
-      (_) {
+      (_, __) {
         sendChange({key: value});
         if (_isLogEnabled) {
           _publishLog(WriteSuccessEvent(KeyAndValue(key, value), T, options));
         }
       },
-      (error) {
+      (error, __) {
         if (_isLogEnabled) {
-          _publishLog(WriteFailureEvent(KeyAndValue(key, value), T, options, error));
+          _publishLog(
+              WriteFailureEvent(KeyAndValue(key, value), T, options, error));
         }
       },
     );
@@ -282,7 +303,7 @@ class RealRxStorage<Key extends Object, Options,
         .startWith(_initialKeyValue) // Dummy value to trigger initial load.
         .asyncMap<T?>(
           (entry) => identical(entry, _initialKeyValue)
-              ? useStorage((s) => s.read<T>(key, decoder, options))
+              ? _useStorage((s) => s.read<T>(key, decoder, options))
               : entry.value as FutureOr<T?>,
         );
 
@@ -303,7 +324,7 @@ class RealRxStorage<Key extends Object, Options,
         .toSingleSubscriptionStream()
         .mapTo<void>(null)
         .startWith(null)
-        .asyncMap((_) => useStorage((s) => s.readAll(options)));
+        .asyncMap((_) => _useStorage((s) => s.readAll(options)));
   }
 
   @override

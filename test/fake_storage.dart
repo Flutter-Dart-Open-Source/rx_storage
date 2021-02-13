@@ -1,18 +1,47 @@
 import 'dart:async';
 
 import 'package:rx_storage/rx_storage.dart';
-import 'package:rx_storage/src/interface/storage.dart';
 
 import 'utils/synchronous_future.dart';
 
 Future<T> _wrap<T>(T value) => SynchronousFuture(value);
 
 abstract class StringKeyStorage extends Storage<String, void> {
-  Future<void> reload();
+  Future<Map<String, Object?>> reload();
 }
 
 abstract class StringKeyRxStorage extends StringKeyStorage
     implements RxStorage<String, void> {}
+
+class FakeDefaultLogger extends DefaultLogger<String, void> {
+  const FakeDefaultLogger();
+
+  @override
+  void log(LoggerEvent<String, void> event) {
+    if (event is ReloadSuccessEvent) {
+      print('ReloadSuccessEvent ${event.map}');
+      return;
+    }
+    if (event is ReloadFailureEvent) {
+      print('ReloadFailureEvent ${event.error}');
+      return;
+    }
+
+    super.log(event);
+  }
+}
+
+class ReloadSuccessEvent implements LoggerEvent<String, void> {
+  final Map<String, Object?> map;
+
+  ReloadSuccessEvent(this.map);
+}
+
+class ReloadFailureEvent implements LoggerEvent<String, void> {
+  final RxStorageError error;
+
+  ReloadFailureEvent(this.error);
+}
 
 class FakeStorage implements StringKeyStorage {
   Map<String, Object?> _map;
@@ -58,12 +87,14 @@ class FakeStorage implements StringKeyStorage {
       _setValue(key, encoder(value));
 
   @override
-  Future<void> reload() {
+  Future<Map<String, Object?>> reload() {
     if (_pendingMap != null) {
       _map = _pendingMap!;
       _pendingMap = null;
+      return _wrap(_map);
+    } else {
+      throw StateError('Cannot reload');
     }
-    return _wrap(null);
   }
 
   @override
@@ -80,7 +111,7 @@ class FakeStorage implements StringKeyStorage {
 }
 
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
-    implements StringKeyRxStorage {
+    implements StringKeyRxStorage, StringKeyStorage {
   FakeRxStorage(
     FutureOr<StringKeyStorage> storageOrFuture, [
     Logger<String, void>? logger,
@@ -92,8 +123,28 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
         );
 
   @override
-  Future<void> reload() async {
-    await useStorage((s) => s.reload());
-    sendChange(await readAll());
+  Future<Map<String, Object?>> reload() async {
+    final before = await useStorageWithHandlers(
+        (s) => s.readAll(), (_, __) => null, (_, __) => null);
+
+    return useStorageWithHandlers(
+      (s) => s.reload(),
+      (value, s) {
+        sendChange(computeMap(before, value));
+        log(ReloadSuccessEvent(value));
+      },
+      (error, _) => log(ReloadFailureEvent(error)),
+    );
   }
+}
+
+Map<String, Object?> computeMap(
+  Map<String, Object?> before,
+  Map<String, Object?> after,
+) {
+  final deletedKeys = before.keys.toSet().difference(after.keys.toSet());
+  return <String, Object?>{
+    ...after,
+    for (final k in deletedKeys) k: null,
+  };
 }

@@ -1,11 +1,9 @@
 import 'dart:async';
 
-import 'package:rx_storage/rx_storage.dart';
-
 import 'fake_storage.dart';
 import 'utils/compat.dart';
 
-void main() async {
+Future<void> main() async {
   const kTestValues = <String, dynamic>{
     'String': 'hello world',
     'bool': true,
@@ -24,13 +22,17 @@ void main() async {
   // };
 
   final storage = FakeStorage(kTestValues);
-  final rxStorage = RxStorage(
+  final rxStorage = FakeRxStorage(
     Future.delayed(
       const Duration(milliseconds: 100),
       () => storage,
     ),
     null,
   );
+
+  rxStorage
+      .getStringStream('String')
+      .listen((v) => print('>>>>>>>>>>>>>>> $v'));
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
@@ -57,6 +59,8 @@ void main() async {
   //
   //
   //
+
+  await Future<void>.delayed(const Duration(seconds: 2));
 
   final completer = Completer<void>.sync();
   stopwatch

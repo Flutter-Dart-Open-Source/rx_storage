@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
@@ -30,7 +29,7 @@ void main() {
 
       rxStorage = FakeRxStorage(
         fakeStorage,
-        const DefaultLogger(),
+        const FakeDefaultLogger(),
       );
     });
 
