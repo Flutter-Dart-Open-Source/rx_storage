@@ -63,13 +63,16 @@ class RealRxStorage<Key extends Object, Options,
       ..stream.listen(logger.log).disposedBy(_bag);
 
     _keyValuesSubject
-        .map<LoggerEvent<Key, Options>>((map) {
-          final pairs =
-              map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
-          return KeysChangedEvent(List.unmodifiable(pairs));
-        })
+        .map<LoggerEvent<Key, Options>>((map) => KeysChangedEvent(_toList(map)))
         .listen(_loggerEventController!.add)
         .disposedBy(_bag);
+  }
+
+  static List<KeyAndValue<Key, Object?>> _toList<Key extends Object>(
+      Map<Key, Object?> map) {
+    final pairs =
+        map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
+    return List.unmodifiable(pairs);
   }
 
   @pragma('vm:prefer-inline')
@@ -164,12 +167,13 @@ class RealRxStorage<Key extends Object, Options,
       (s) => s.read(key, decoder, options),
       (value) {
         if (_isLogEnabled) {
-          _publishLog(ReadValueSuccessEvent(KeyAndValue(key, value), options));
+          _publishLog(
+              ReadValueSuccessEvent(KeyAndValue(key, value), T, options));
         }
       },
       (error) {
         if (_isLogEnabled) {
-          _publishLog(ReadValueFailureEvent(key, error, options));
+          _publishLog(ReadValueFailureEvent(key, T, error, options));
         }
       },
     );
@@ -183,7 +187,7 @@ class RealRxStorage<Key extends Object, Options,
       (s) => s.readAll(options),
       (value) {
         if (_isLogEnabled) {
-          _publishLog(ReadAllSuccessEvent(value, options));
+          _publishLog(ReadAllSuccessEvent(_toList(value), options));
         }
       },
       (error) {
@@ -249,12 +253,12 @@ class RealRxStorage<Key extends Object, Options,
       (_) {
         sendChange({key: value});
         if (_isLogEnabled) {
-          _publishLog(WriteSuccessEvent(key, value, options));
+          _publishLog(WriteSuccessEvent(KeyAndValue(key, value), T, options));
         }
       },
       (error) {
         if (_isLogEnabled) {
-          _publishLog(WriteFailureEvent(key, value, options, error));
+          _publishLog(WriteFailureEvent(KeyAndValue(key, value), T, options, error));
         }
       },
     );

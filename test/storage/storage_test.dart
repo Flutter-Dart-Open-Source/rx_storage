@@ -55,6 +55,8 @@ void main() {
       expect(await rxStorage.getDouble('double'), kTestValues['double']);
       expect(await rxStorage.getStringList('List'), kTestValues['List']);
       expect(await rxStorage.readUser(), user1);
+
+      expect(await rxStorage.readAll(), kTestValues);
     });
 
     test('writing', () async {
