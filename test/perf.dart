@@ -12,15 +12,6 @@ Future<void> main() async {
     'List': <String>['foo', 'bar'],
   };
 
-  //
-  // const kTestValues2 = <String, dynamic>{
-  //   'String': 'goodbye world',
-  //   'bool': false,
-  //   'int': 1337,
-  //   'double': 2.71828,
-  //   'List': <String>['baz', 'quox'],
-  // };
-
   final storage = FakeStorage(kTestValues);
   final rxStorage = FakeRxStorage(
     Future.delayed(
@@ -80,5 +71,4 @@ Future<void> main() async {
   }
 
   await completer.future;
-  print('END');
 }
