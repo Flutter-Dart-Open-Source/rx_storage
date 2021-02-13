@@ -14,8 +14,8 @@ abstract class LoggerEvent<Key extends Object, Options> {}
 /// Key changed when mutating storage.
 class KeysChangedEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
-  /// An iterable containing all changed values associated with keys.
-  final Iterable<KeyAndValue<Key, Object?>> pairs;
+  /// A list containing all changed values associated with keys.
+  final List<KeyAndValue<Key, Object?>> pairs;
 
   /// Construct a [KeysChangedEvent].
   KeysChangedEvent(this.pairs);
@@ -55,7 +55,7 @@ class ReadValueSuccessEvent<Key extends Object, Options>
   /// Read value with key.
   final KeyAndValue<Key, Object?> pair;
 
-  /// The type
+  /// The type of read value.
   final Type type;
 
   /// The options.
@@ -71,7 +71,7 @@ class ReadValueFailureEvent<Key extends Object, Options>
   /// The key.
   final Key key;
 
-  /// The type
+  /// The expected type of value.
   final Type type;
 
   /// The error occurred when reading.
@@ -88,7 +88,7 @@ class ReadValueFailureEvent<Key extends Object, Options>
 class ReadAllSuccessEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// All values read from storage.
-  final Iterable<KeyAndValue<Key, Object?>> all;
+  final List<KeyAndValue<Key, Object?>> all;
 
   /// The options.
   final Options? options;
@@ -154,7 +154,7 @@ class RemoveSuccessEvent<Key extends Object, Options>
   RemoveSuccessEvent(this.key, this.options);
 }
 
-/// Remove successfully.
+/// Remove failed.
 class RemoveFailureEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// The key.
@@ -170,13 +170,13 @@ class RemoveFailureEvent<Key extends Object, Options>
   RemoveFailureEvent(this.key, this.options, this.error);
 }
 
-/// Remove successfully.
+/// Write successfully.
 class WriteSuccessEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// The key and value.
   final KeyAndValue<Key, Object?> pair;
 
-  /// The type.
+  /// The type of value.
   final Type type;
 
   /// The options.
@@ -186,19 +186,19 @@ class WriteSuccessEvent<Key extends Object, Options>
   WriteSuccessEvent(this.pair, this.type, this.options);
 }
 
-/// Remove successfully.
+/// Write failed.
 class WriteFailureEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// The key and value.
   final KeyAndValue<Key, Object?> pair;
 
-  /// The type.
+  /// The type of value.
   final Type type;
 
   /// The options.
   final Options? options;
 
-  /// The error occurred when writing.
+  /// The error occurred when removing.
   final RxStorageError error;
 
   /// Construct a [WriteFailureEvent].

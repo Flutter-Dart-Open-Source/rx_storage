@@ -12,6 +12,7 @@ import '../logger/logger.dart';
 import '../model/error.dart';
 import '../model/key_and_value.dart';
 
+// TODO(assert)
 // ignore_for_file: unnecessary_null_comparison
 
 /// Default [RxStorage] implementation.
@@ -67,16 +68,10 @@ class RealRxStorage<Key extends Object, Options,
       ..stream.listen(logger.log).disposedBy(_bag);
 
     _keyValuesSubject
-        .map<LoggerEvent<Key, Options>>((map) => KeysChangedEvent(_toList(map)))
+        .map<LoggerEvent<Key, Options>>(
+            (map) => KeysChangedEvent(_mapToList(map)))
         .listen(_loggerEventController!.add)
         .disposedBy(_bag);
-  }
-
-  static List<KeyAndValue<Key, Object?>> _toList<Key extends Object>(
-      Map<Key, Object?> map) {
-    final pairs =
-        map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
-    return List.unmodifiable(pairs);
   }
 
   @pragma('vm:prefer-inline')
@@ -148,6 +143,7 @@ class RealRxStorage<Key extends Object, Options,
   @protected
   void sendChange(Map<Key, Object?> map) {
     assert(_debugAssertNotDisposed());
+    assert(map != null);
 
     try {
       _keyValuesSubject.add(map);
@@ -159,6 +155,9 @@ class RealRxStorage<Key extends Object, Options,
   /// Log event.
   @protected
   void log(LoggerEvent<Key, Options> event) {
+    assert(_debugAssertNotDisposed());
+    assert(event != null);
+
     if (_isLogEnabled) {
       _publishLog(event);
     }
@@ -207,7 +206,7 @@ class RealRxStorage<Key extends Object, Options,
       (s) => s.readAll(options),
       (value, _) {
         if (_isLogEnabled) {
-          _publishLog(ReadAllSuccessEvent(_toList(value), options));
+          _publishLog(ReadAllSuccessEvent(_mapToList(value), options));
         }
       },
       (error, _) {
@@ -333,6 +332,13 @@ class RealRxStorage<Key extends Object, Options,
 
     return _disposeMemo.runOnce(_bag.dispose).then((_) => _onDispose?.call());
   }
+}
+
+List<KeyAndValue<Key, Object?>> _mapToList<Key extends Object>(
+    Map<Key, Object?> map) {
+  final pairs =
+      map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
+  return List.unmodifiable(pairs);
 }
 
 /// Scope function extension

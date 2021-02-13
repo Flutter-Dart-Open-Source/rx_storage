@@ -1,12 +1,14 @@
-/// TODO
+/// An Object which acts as a tuple containing both an error and the
+/// corresponding stack trace.
 class RxStorageError {
-  /// TODO
+  /// A reference to the wrapped error object.
   final Object error;
 
-  /// TODO
+  /// A reference to the wrapped [StackTrace]
   final StackTrace stackTrace;
 
-  /// TODO
+  /// Constructs an object containing both an [error] and the
+  /// corresponding [stackTrace].
   const RxStorageError(this.error, this.stackTrace);
 
   @override
