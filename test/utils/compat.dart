@@ -5,36 +5,37 @@ T _identity<T>(T t) => t;
 extension RxCompatExtensions on RxStorage<String, void> {
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
-  Stream<dynamic> getStream(String key) => observe<dynamic>(key, _identity);
+  Stream<Object?> getStream(String key) => observe<Object>(key, _identity);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a bool.
-  Stream<bool> getBoolStream(String key) =>
-      observe(key, (dynamic s) => s as bool);
+  Stream<bool?> getBoolStream(String key) =>
+      observe(key, (Object? s) => s as bool?);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a double.
-  Stream<double> getDoubleStream(String key) =>
-      observe(key, (dynamic s) => s as double);
+  Stream<double?> getDoubleStream(String key) =>
+      observe(key, (Object? s) => s as double?);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a int.
-  Stream<int> getIntStream(String key) => observe(key, (dynamic s) => s as int);
+  Stream<int?> getIntStream(String key) =>
+      observe(key, (Object? s) => s as int?);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a String.
-  Stream<String> getStringStream(String key) =>
-      observe(key, (dynamic s) => s as String);
+  Stream<String?> getStringStream(String key) =>
+      observe(key, (Object? s) => s as String?);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with [key] was changed.
   /// This stream will emit an error if it's not a string set.
-  Stream<List<String>> getStringListStream(String key) =>
-      observe(key, (dynamic s) => s as List<String>);
+  Stream<List<String>?> getStringListStream(String key) =>
+      observe(key, (Object? s) => s as List<String>?);
 
   /// Return [Stream] that will emit all keys read from persistent storage.
   /// It will automatic emit all keys when any value was changed.
@@ -44,19 +45,20 @@ extension RxCompatExtensions on RxStorage<String, void> {
 
 extension CompatExtensions on Storage<String, void> {
   /// Reads a value of any type from persistent storage.
-  Future<dynamic> get(String key) => read<dynamic>(key, _identity);
+  Future<Object?> get(String key) => read<Object>(key, _identity);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a bool.
-  Future<bool> getBool(String key) => read(key, (dynamic s) => s as bool);
+  Future<bool?> getBool(String key) => read(key, (Object? s) => s as bool?);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a double.
-  Future<double> getDouble(String key) => read(key, (dynamic s) => s as double);
+  Future<double?> getDouble(String key) =>
+      read(key, (Object? s) => s as double?);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a int.
-  Future<int> getInt(String key) => read(key, (dynamic s) => s as int);
+  Future<int?> getInt(String key) => read(key, (Object? s) => s as int?);
 
   /// Returns all keys in the persistent storage.
   Future<Set<String>> getKeys() =>
@@ -64,40 +66,41 @@ extension CompatExtensions on Storage<String, void> {
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a String.
-  Future<String> getString(String key) => read(key, (dynamic s) => s as String);
+  Future<String?> getString(String key) =>
+      read(key, (Object? s) => s as String?);
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a string set.
-  Future<List<String>> getStringList(String key) =>
-      read(key, (dynamic s) => s as List<String>);
+  Future<List<String>?> getStringList(String key) =>
+      read(key, (Object? s) => s as List<String>?);
 
   /// Saves a boolean [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setBool(String key, bool value) => write(key, value, _identity);
+  Future<void> setBool(String key, bool? value) => write(key, value, _identity);
 
   /// Saves a double [value] to persistent storage in the background.
   ///
   /// Android doesn't support storing doubles, so it will be stored as a float.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setDouble(String key, double value) =>
+  Future<void> setDouble(String key, double? value) =>
       write(key, value, _identity);
 
   /// Saves an integer [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setInt(String key, int value) => write(key, value, _identity);
+  Future<void> setInt(String key, int? value) => write(key, value, _identity);
 
   /// Saves a string [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setString(String key, String value) =>
+  Future<void> setString(String key, String? value) =>
       write(key, value, _identity);
 
   /// Saves a list of strings [value] to persistent storage in the background.
   ///
   /// If [value] is null, this is equivalent to calling [remove()] on the [key].
-  Future<bool> setStringList(String key, List<String> value) =>
+  Future<void> setStringList(String key, List<String>? value) =>
       write(key, value, _identity);
 }

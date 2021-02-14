@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
@@ -31,12 +30,12 @@ void main() {
       'User': jsonEncode(user2),
     };
 
-    FakeStorage storage;
-    FakeRxStorage rxStorage;
+    late FakeStorage storage;
+    late FakeRxStorage rxStorage;
 
     setUp(() {
       storage = FakeStorage(kTestValues);
-      rxStorage = FakeRxStorage(storage, const DefaultLogger());
+      rxStorage = FakeRxStorage(storage, const FakeDefaultLogger());
     });
 
     tearDown(() async {
@@ -55,10 +54,12 @@ void main() {
       expect(await rxStorage.getDouble('double'), kTestValues['double']);
       expect(await rxStorage.getStringList('List'), kTestValues['List']);
       expect(await rxStorage.readUser(), user1);
+
+      expect(await rxStorage.readAll(), kTestValues);
     });
 
     test('writing', () async {
-      await Future.wait(<Future<bool>>[
+      await Future.wait([
         rxStorage.setString('String', kTestValues2['String'] as String),
         rxStorage.setBool('bool', kTestValues2['bool'] as bool),
         rxStorage.setInt('int', kTestValues2['int'] as int),
@@ -123,7 +124,7 @@ void main() {
       final cachedList = await rxStorage.getStringList('myList');
       expect(cachedList, <String>[]);
 
-      cachedList.add('foobar2');
+      cachedList!.add('foobar2');
 
       expect(await rxStorage.getStringList('myList'), <String>[]);
     });

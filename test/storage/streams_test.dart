@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 import '../fake_storage.dart';
@@ -22,15 +21,15 @@ void main() {
       'User': jsonEncode(user1),
     };
 
-    FakeStorage fakeStorage;
-    FakeRxStorage rxStorage;
+    late FakeStorage fakeStorage;
+    late FakeRxStorage rxStorage;
 
     setUp(() {
       fakeStorage = FakeStorage(kTestValues);
 
       rxStorage = FakeRxStorage(
         fakeStorage,
-        const DefaultLogger(),
+        const FakeDefaultLogger(),
       );
     });
 
@@ -237,7 +236,7 @@ void main() {
     test('Does not emit anything after disposed', () async {
       final stream = rxStorage.getStringListStream('List');
 
-      const expected = [
+      const expected = <dynamic>[
         anything,
         ['before', 'dispose', '1'],
         ['before', 'dispose', '2'],

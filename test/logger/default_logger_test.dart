@@ -1,103 +1,53 @@
-import 'dart:async';
-
-import 'package:rx_storage/src/logger/default_logger.dart';
-import 'package:rx_storage/src/model/key_and_value.dart';
+import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
 void main() {
-  final logs = <String>[];
+  group('DefaultLogger<String, void>', () {
+    final logger = DefaultLogger<String, void>();
 
-  dynamic Function() overridePrint(dynamic Function() testFn) {
-    return () {
-      final spec = ZoneSpecification(print: (_, __, ___, String line) {
-        // Add to log instead of printing to stdout
-        logs.add(line);
-      });
-      return Zone.current.fork(specification: spec).run<dynamic>(testFn);
-    };
-  }
+    test('KeysChangedEvent', () {
+      const pairs = [
+        KeyAndValue('key1', 'value1'),
+        KeyAndValue('key2', 2),
+      ];
+      logger.log(KeysChangedEvent(pairs));
+      prints([
+        ' ↓ Key changes',
+        "    → { 'key1': value1 }" '\n' "    → { 'key2': 2 }",
+      ].join('\n'));
+    });
 
-  group('DefaultLogger', () {
-    final logger = DefaultLogger();
+    test('OnDataStreamEvent', () {
+      const pair = KeyAndValue('key1', 'value1');
+      logger.log(OnDataStreamEvent(pair));
 
-    setUp(() => logs.clear());
+      prints(" → Stream emits data: { 'key1': value1 }");
+    });
 
-    test(
-      'keysChanged',
-      overridePrint(() {
-        const pairs = [
-          KeyAndValue('key1', 'value1'),
-          KeyAndValue('key2', 2),
-        ];
-        logger.keysChanged(pairs);
-        expect(
-          logs,
-          <String>[
-            ' ↓ Key changes',
-            "    → { 'key1': value1 }" '\n' "    → { 'key2': 2 }",
-          ],
-        );
-      }),
-    );
+    test('OnErrorStreamEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      logger.log(OnErrorStreamEvent(RxStorageError(exception, stackTrace)));
 
-    test(
-      'doOnDataStream',
-      overridePrint(() {
-        const keyAndValue = KeyAndValue('key1', 'value1');
-        logger.doOnDataStream(keyAndValue);
+      prints(' → Stream emits error: $exception, $stackTrace');
+    });
 
-        expect(
-          logs,
-          [" → Stream emits data: { 'key1': value1 }"],
-        );
-      }),
-    );
+    test('ReadValueSuccessEvent', () {
+      const type = String;
+      const key = 'key';
+      const value = 'value';
+      logger.log(ReadValueSuccessEvent(KeyAndValue(key, value), type, null));
 
-    test(
-      'doOnErrorStream',
-      overridePrint(() {
-        final stackTrace = StackTrace.current;
-        final exception = Exception();
-        logger.doOnErrorStream(exception, stackTrace);
+      prints(" → Read: type=String, key='key' → value");
+    });
 
-        expect(
-          logs,
-          [' → Stream emits error: $exception, $stackTrace'],
-        );
-      }),
-    );
+    test('WriteSuccessEvent', () {
+      const type = String;
+      const key = 'key';
+      const value = 'value';
+      logger.log(WriteSuccessEvent(KeyAndValue(key, value), type, null));
 
-    test(
-      'readValue',
-      overridePrint(() {
-        const type = String;
-        const key = 'key';
-        const value = 'value';
-        logger.readValue(type, key, value);
-
-        expect(
-          logs,
-          [" → Read value: type String, key 'key' → value"],
-        );
-      }),
-    );
-
-    test(
-      'writeValue',
-      overridePrint(() {
-        const type = String;
-        const key = 'key';
-        const value = 'value';
-        const writeResult = true;
-        logger.writeValue(type, key, value, writeResult);
-
-        expect(
-          logs,
-          [
-            " → Write value: type String, key 'key', value value  → result true"
-          ],
-        );
-      }),
-    );
+      prints(" ← Write: key='key', value=value, type=String → success");
+    });
   });
 }

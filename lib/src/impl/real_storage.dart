@@ -1,78 +1,100 @@
 import 'dart:async';
-import 'dart:collection';
 
+import 'package:disposebag/disposebag.dart' hide Logger;
 import 'package:meta/meta.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../async_memoizer.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
+import '../logger/event.dart';
 import '../logger/logger.dart';
+import '../model/error.dart';
 import '../model/key_and_value.dart';
-import '../stream_extensions/map_not_null.dart';
-import '../stream_extensions/single_subscription.dart';
+
+// TODO(assert)
+// ignore_for_file: unnecessary_null_comparison
 
 /// Default [RxStorage] implementation.
-class RealRxStorage<Key, Options, S extends Storage<Key, Options>>
-    implements RxStorage<Key, Options> {
+class RealRxStorage<Key extends Object, Options,
+    S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
+  static const _initialKeyValue =
+      KeyAndValue('rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>');
+
   /// Trigger subject
-  final _keyValuesSubject = PublishSubject<Map<Key, dynamic>>();
+  final _keyValuesSubject = PublishSubject<Map<Key, Object?>>();
 
   final _disposeMemo = AsyncMemoizer<void>();
+  late final _bag =
+      DisposeBag(const <Object>[], 'RealRxStorage#${_shortHash(this)}');
 
-  var _isDisposed = false;
-
-  /// Logger subscription. Nullable
-  StreamSubscription<Map<Key, dynamic>> _subscription;
-
-  /// Nullable.
-  S _storage;
+  /// Logger controller. Nullable
+  StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
 
   /// Nullable.
-  Future<S> _storageFuture;
+  S? _storage;
+
+  late Future<S> _storageFuture;
 
   /// Nullable
-  final Logger _logger;
-
-  /// Nullable
-  final void Function() _onDispose;
+  final void Function()? _onDispose;
 
   /// Construct a [RealRxStorage].
   RealRxStorage(
     FutureOr<S> storageOrFuture, [
-    this._logger,
+    final Logger<Key, Options>? logger,
     this._onDispose,
   ]) : assert(storageOrFuture != null) {
     if (storageOrFuture is Future<S>) {
-      _storageFuture = storageOrFuture.then((value) => _storage = value);
+      _storageFuture = storageOrFuture.then((value) {
+        assert(_storage is! RxStorage<Key, Options>);
+        return _storage = value;
+      });
     } else {
-      _storageFuture = null;
-      _storage = storageOrFuture as S;
+      _storage = storageOrFuture;
+      assert(_storage is! RxStorage<Key, Options>);
     }
 
-    if (_logger == null) {
-      return;
-    }
-
-    _subscription = _keyValuesSubject.listen((map) {
-      final pairs = [
-        for (final entry in map.entries)
-          KeyAndValue<Key, dynamic>(
-            entry.key,
-            entry.value,
-          ),
-      ];
-      _logger.keysChanged(UnmodifiableListView(pairs));
-    });
+    _keyValuesSubject.disposedBy(_bag);
+    logger?.let(_setupLogger);
   }
 
   //
   // Internal
   //
 
+  void _setupLogger(Logger logger) {
+    _loggerEventController = StreamController(sync: true)
+      ..disposedBy(_bag)
+      ..stream.listen(logger.log).disposedBy(_bag);
+
+    _keyValuesSubject
+        .map<LoggerEvent<Key, Options>>(
+            (map) => KeysChangedEvent(_mapToList(map)))
+        .listen(_loggerEventController!.add)
+        .disposedBy(_bag);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  bool get _isLogEnabled => _loggerEventController != null;
+
+  /// Crash if [_loggerEventController] is null.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _publishLog(LoggerEvent<Key, Options> event) {
+    assert(_debugAssertNotDisposed());
+
+    try {
+      _loggerEventController!.add(event);
+    } on StateError {
+      assert(_debugAssertNotDisposed());
+    }
+  }
+
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_isDisposed && _disposeMemo.hasRun) {
+      if (_bag.isDisposed && _disposeMemo.hasRun) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }
@@ -81,9 +103,49 @@ class RealRxStorage<Key, Options, S extends Storage<Key, Options>>
     return true;
   }
 
+  /// Calling [block] with [S] as argument.
+  Future<R> _useStorage<R>(Future<R> Function(S) block) =>
+      _storage?.let(block) ?? _storageFuture.then(block);
+
+  //
+  // Protected
+  //
+
+  /// Calling [block] with [S] as argument.
+  Future<R> useStorageWithHandlers<R>(
+    Future<R> Function(S) block,
+    FutureOr<void> Function(R, S) onSuccess,
+    FutureOr<void> Function(RxStorageError, S) onFailure,
+  ) async {
+    assert(_debugAssertNotDisposed());
+    assert(block != null);
+    assert(onSuccess != null);
+    assert(onFailure != null);
+
+    final storage = _storage ?? await _storageFuture;
+
+    try {
+      final value = await block(storage);
+      final futureOrVoid = onSuccess(value, storage);
+      if (futureOrVoid is Future<void>) {
+        await futureOrVoid;
+      }
+      return value;
+    } catch (e, s) {
+      final futureOrVoid = onFailure(RxStorageError(e, s), storage);
+      if (futureOrVoid is Future<void>) {
+        await futureOrVoid;
+      }
+      rethrow;
+    }
+  }
+
   /// Add changed map to subject to trigger.
   @protected
-  void sendChange(Map<Key, dynamic> map) {
+  void sendChange(Map<Key, Object?> map) {
+    assert(_debugAssertNotDisposed());
+    assert(map != null);
+
     try {
       _keyValuesSubject.add(map);
     } on StateError {
@@ -91,153 +153,204 @@ class RealRxStorage<Key, Options, S extends Storage<Key, Options>>
     }
   }
 
-  /// Calling [block] with [S] as argument.
+  /// Log event.
   @protected
-  Future<R> useStorage<R>(Future<R> Function(S) block) =>
-      _storage != null ? block(_storage) : _storageFuture.then(block);
+  void log(LoggerEvent<Key, Options> event) {
+    assert(_debugAssertNotDisposed());
+    assert(event != null);
 
+    if (_isLogEnabled) {
+      _publishLog(event);
+    }
+  }
+
+  //
   // Get and set methods (implements [Storage])
+  //
 
   @override
-  Future<bool> containsKey(Key key, [Options options]) async {
+  Future<bool> containsKey(Key key, [Options? options]) async {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return useStorage((s) => s.containsKey(key, options));
+    return await _useStorage((s) => s.containsKey(key, options));
   }
 
   @override
-  Future<T> read<T>(Key key, Decoder<T> decoder, [Options options]) async {
+  Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
+      [Options? options]) {
     assert(_debugAssertNotDisposed());
     assert(key != null);
     assert(decoder != null);
 
-    final value = await useStorage((s) => s.read(key, decoder, options));
-    _logger?.readValue(T, key, value);
-    return value;
+    return useStorageWithHandlers(
+      (s) => s.read(key, decoder, options),
+      (value, _) {
+        if (_isLogEnabled) {
+          _publishLog(
+              ReadValueSuccessEvent(KeyAndValue(key, value), T, options));
+        }
+      },
+      (error, _) {
+        if (_isLogEnabled) {
+          _publishLog(ReadValueFailureEvent(key, T, error, options));
+        }
+      },
+    );
   }
 
   @override
-  Future<Map<Key, dynamic>> readAll([Options options]) async {
+  Future<Map<Key, Object?>> readAll([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    final all = await useStorage((s) => s.readAll(options));
-    if (_logger != null) {
-      all.forEach(
-          (key, dynamic value) => _logger.readValue(dynamic, key, value));
-    }
-    return all;
+    return useStorageWithHandlers(
+      (s) => s.readAll(options),
+      (value, _) {
+        if (_isLogEnabled) {
+          _publishLog(ReadAllSuccessEvent(_mapToList(value), options));
+        }
+      },
+      (error, _) {
+        if (_isLogEnabled) {
+          _publishLog(ReadAllFailureEvent(error, options));
+        }
+      },
+    );
   }
 
   @override
-  Future<bool> clear([Options options]) async {
+  Future<void> clear([Options? options]) async {
     assert(_debugAssertNotDisposed());
 
-    final keys = (await readAll()).keys;
-    final result = await useStorage((s) => s.clear(options));
+    final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
-    // All values are set to null
-    if (_logger != null) {
-      for (final key in keys) {
-        _logger.writeValue(dynamic, key, null, result);
-      }
-    }
-    if (result) {
-      final map = {for (final k in keys) k: null};
-      sendChange(map);
-    }
-
-    return result;
+    return await useStorageWithHandlers(
+      (s) => s.clear(options),
+      (_, __) {
+        sendChange({for (final k in keys) k: null});
+        if (_isLogEnabled) {
+          _publishLog(ClearSuccessEvent(options));
+        }
+      },
+      (error, _) {
+        if (_isLogEnabled) {
+          _publishLog(ClearFailureEvent(error, options));
+        }
+      },
+    );
   }
 
   @override
-  Future<bool> remove(Key key, [Options options]) async {
+  Future<void> remove(Key key, [Options? options]) {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    final result = await useStorage((s) => s.remove(key, options));
-
-    _logger?.writeValue(dynamic, key, null, result);
-    if (result) {
-      sendChange(<Key, dynamic>{key: null});
-    }
-
-    return result;
+    return useStorageWithHandlers(
+      (s) => s.remove(key, options),
+      (_, __) {
+        sendChange({key: null});
+        if (_isLogEnabled) {
+          _publishLog(RemoveSuccessEvent(key, options));
+        }
+      },
+      (error, _) {
+        if (_isLogEnabled) {
+          _publishLog(RemoveFailureEvent(key, options, error));
+        }
+      },
+    );
   }
 
   @override
-  Future<bool> write<T>(Key key, T value, Encoder<T> encoder,
-      [Options options]) async {
+  Future<void> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
+      [Options? options]) {
     assert(_debugAssertNotDisposed());
     assert(key != null);
     assert(encoder != null);
 
-    final result =
-        await useStorage((s) => s.write(key, value, encoder, options));
-
-    _logger?.writeValue(T, key, value, result);
-    if (result) {
-      sendChange(<Key, dynamic>{key: value});
-    }
-
-    return result;
+    return useStorageWithHandlers(
+      (s) => s.write(key, value, encoder, options),
+      (_, __) {
+        sendChange({key: value});
+        if (_isLogEnabled) {
+          _publishLog(WriteSuccessEvent(KeyAndValue(key, value), T, options));
+        }
+      },
+      (error, __) {
+        if (_isLogEnabled) {
+          _publishLog(
+              WriteFailureEvent(KeyAndValue(key, value), T, options, error));
+        }
+      },
+    );
   }
 
+  //
   // Get streams (implements [RxStorage])
+  //
 
   @override
-  Stream<T> observe<T>(Key key, Decoder<T> decoder, [Options options]) {
+  Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
+      [Options? options]) {
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
     final stream = _keyValuesSubject
         .toSingleSubscriptionStream()
         .mapNotNull((map) => map.containsKey(key)
-            ? KeyAndValue<Key, dynamic>(key, map[key])
+            ? KeyAndValue<Object, Object?>(key, map[key])
             : null)
-        .startWith(null) // Dummy value to trigger initial load.
-        .asyncMap<T>((entry) => entry == null
-            ? read<T>(key, decoder, options)
-            : entry.value as FutureOr<T>);
+        .startWith(_initialKeyValue) // Dummy value to trigger initial load.
+        .asyncMap<T?>(
+          (entry) => identical(entry, _initialKeyValue)
+              ? _useStorage((s) => s.read<T>(key, decoder, options))
+              : entry.value as FutureOr<T?>,
+        );
 
-    if (_logger == null) {
-      return stream;
-    }
-
-    return stream
-        .doOnData(
-            (value) => _logger.doOnDataStream(KeyAndValue<Key, T>(key, value)))
-        .doOnError((e, StackTrace s) => _logger.doOnErrorStream(e, s));
+    return _isLogEnabled
+        ? stream
+            .doOnData((value) =>
+                _publishLog(OnDataStreamEvent(KeyAndValue(key, value))))
+            .doOnError((e, s) => _publishLog(
+                OnErrorStreamEvent(RxStorageError(e, s ?? StackTrace.empty))))
+        : stream;
   }
 
   @override
-  Stream<Map<Key, dynamic>> observeAll([Options options]) {
+  Stream<Map<Key, Object?>> observeAll([Options? options]) {
     assert(_debugAssertNotDisposed());
 
     return _keyValuesSubject
         .toSingleSubscriptionStream()
+        .mapTo<void>(null)
         .startWith(null)
-        .asyncMap((_) => readAll(options));
+        .asyncMap((_) => _useStorage((s) => s.readAll(options)));
   }
 
   @override
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
-    return _disposeMemo.runOnce(() async {
-      final cancelFuture = _subscription?.cancel();
-
-      if (cancelFuture == null) {
-        await _keyValuesSubject.close();
-      } else {
-        await Future.wait(
-          [_keyValuesSubject.close(), cancelFuture],
-          eagerError: true,
-        );
-      }
-
-      _isDisposed = true;
-      _onDispose?.call();
-    });
+    return _disposeMemo.runOnce(_bag.dispose).then((_) => _onDispose?.call());
   }
 }
+
+List<KeyAndValue<Key, Object?>> _mapToList<Key extends Object>(
+    Map<Key, Object?> map) {
+  final pairs =
+      map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
+  return List.unmodifiable(pairs);
+}
+
+/// Scope function extension
+extension _ScopeFunctionExtension<T> on T {
+  /// Returns result from calling [f].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  R let<R>(R Function(T) block) => block(this);
+}
+
+/// Returns a 5 character long hexadecimal string generated from
+/// [Object.hashCode]'s 20 least-significant bits.
+String _shortHash(Object? object) =>
+    object.hashCode.toUnsigned(20).toRadixString(16).padLeft(5, '0');

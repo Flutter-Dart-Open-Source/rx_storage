@@ -8,15 +8,15 @@ class User {
 
   const User(this.id, this.name);
 
-  factory User.fromJson(Map<String, dynamic> map) {
+  factory User.fromJson(Map<String, Object?> map) {
     return User(
       map['id'] as int,
       map['name'] as String,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
       'id': id,
       'name': name,
     };
@@ -38,19 +38,19 @@ class User {
 }
 
 extension RxStoreageExtensionsForUser on RxStorage<String, void> {
-  Future<User> readUser() => read('User', _toUser);
+  Future<User?> readUser() => read('User', _toUser);
 
-  Future<bool> writeUser(User user) => write<User>('User', user, _toString);
+  Future<void> writeUser(User? user) => write<User>('User', user, _toString);
 
-  Stream<User> observeUser() => observe<User>('User', _toUser);
+  Stream<User?> observeUser() => observe<User>('User', _toUser);
 }
 
-User _toUser(dynamic s) {
+User? _toUser(Object? s) {
   if (s == null) {
     return null;
   }
-  final map = (jsonDecode(s as String) as Map).cast<String, dynamic>();
+  final map = jsonDecode(s as String) as Map<String, Object?>;
   return User.fromJson(map);
 }
 
-String _toString(User u) => u == null ? null : jsonEncode(u);
+String? _toString(User? u) => u == null ? null : jsonEncode(u);

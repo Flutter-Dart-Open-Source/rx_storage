@@ -1,5 +1,5 @@
 /// Pair of [key] and [value].
-class KeyAndValue<K, V> {
+class KeyAndValue<K extends Object, V> {
   /// The key of the [KeyAndValue].
   final K key;
 
