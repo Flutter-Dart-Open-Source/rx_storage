@@ -80,8 +80,6 @@ class RealRxStorage<Key extends Object, Options,
   bool get _isLogEnabled => _loggerEventController != null;
 
   /// Crash if [_loggerEventController] is null.
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
   void _publishLog(LoggerEvent<Key, Options> event) {
     assert(_debugAssertNotDisposed());
 
