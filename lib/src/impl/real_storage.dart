@@ -25,7 +25,8 @@ class RealRxStorage<Key extends Object, Options,
   final _keyValuesSubject = PublishSubject<Map<Key, Object?>>();
 
   final _disposeMemo = AsyncMemoizer<void>();
-  final _bag = DisposeBag();
+  late final _bag =
+      DisposeBag(const <Object>[], 'RealRxStorage#${_shortHash(this)}');
 
   /// Logger controller. Nullable
   StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
@@ -348,3 +349,8 @@ extension _ScopeFunctionExtension<T> on T {
   @pragma('dart2js:tryInline')
   R let<R>(R Function(T) block) => block(this);
 }
+
+/// Returns a 5 character long hexadecimal string generated from
+/// [Object.hashCode]'s 20 least-significant bits.
+String _shortHash(Object? object) =>
+    object.hashCode.toUnsigned(20).toRadixString(16).padLeft(5, '0');
