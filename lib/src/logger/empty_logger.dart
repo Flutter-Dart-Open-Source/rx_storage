@@ -1,7 +1,7 @@
 import 'event.dart';
 import 'logger.dart';
 
-/// Logger's implementation with empty methods.
+/// Log nothing :)
 class EmptyLogger<Key extends Object, Options> implements Logger<Key, Options> {
   /// Constructs a [EmptyLogger].
   const EmptyLogger();

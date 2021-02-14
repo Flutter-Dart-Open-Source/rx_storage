@@ -10,44 +10,56 @@ void main() {
         KeyAndValue('key1', 'value1'),
         KeyAndValue('key2', 2),
       ];
-      logger.log(KeysChangedEvent(pairs));
-      prints([
-        ' ↓ Key changes',
-        "    → { 'key1': value1 }" '\n' "    → { 'key2': 2 }",
-      ].join('\n'));
+
+      expect(
+        () => logger.log(KeysChangedEvent(pairs)),
+        prints([
+          ' ↓ Key changes',
+          "    → { 'key1': value1 }",
+          "    → { 'key2': 2 }\n",
+        ].join('\n')),
+      );
+      ;
     });
 
     test('OnDataStreamEvent', () {
       const pair = KeyAndValue('key1', 'value1');
-      logger.log(OnDataStreamEvent(pair));
-
-      prints(" → Stream emits data: { 'key1': value1 }");
+      expect(
+        () => logger.log(OnDataStreamEvent(pair)),
+        prints(" → Stream emits data: { 'key1': value1 }\n"),
+      );
     });
 
     test('OnErrorStreamEvent', () {
       final stackTrace = StackTrace.current;
       final exception = Exception();
-      logger.log(OnErrorStreamEvent(RxStorageError(exception, stackTrace)));
-
-      prints(' → Stream emits error: $exception, $stackTrace');
+      expect(
+        () => logger
+            .log(OnErrorStreamEvent(RxStorageError(exception, stackTrace))),
+        prints(' → Stream emits error: $exception, $stackTrace\n'),
+      );
     });
 
     test('ReadValueSuccessEvent', () {
       const type = String;
       const key = 'key';
       const value = 'value';
-      logger.log(ReadValueSuccessEvent(KeyAndValue(key, value), type, null));
-
-      prints(" → Read: type=String, key='key' → value");
+      expect(
+        () => logger
+            .log(ReadValueSuccessEvent(KeyAndValue(key, value), type, null)),
+        prints(" → Read: type=String, key='key' → value\n"),
+      );
     });
 
     test('WriteSuccessEvent', () {
       const type = String;
       const key = 'key';
       const value = 'value';
-      logger.log(WriteSuccessEvent(KeyAndValue(key, value), type, null));
-
-      prints(" ← Write: key='key', value=value, type=String → success");
+      expect(
+        () =>
+            logger.log(WriteSuccessEvent(KeyAndValue(key, value), type, null)),
+        prints(" ← Write: key='key', value=value, type=String → success\n"),
+      );
     });
   });
 }
