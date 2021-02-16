@@ -70,7 +70,7 @@ class RealRxStorage<Key extends Object, Options,
 
     _keyValuesSubject
         .map<LoggerEvent<Key, Options>>(
-            (map) => KeysChangedEvent(_mapToList(map)))
+            (map) => KeysChangedEvent(map.toListOfKeyAndValues()))
         .listen(_loggerEventController!.add)
         .disposedBy(_bag);
   }
@@ -205,7 +205,8 @@ class RealRxStorage<Key extends Object, Options,
       (s) => s.readAll(options),
       (value, _) {
         if (_isLogEnabled) {
-          _publishLog(ReadAllSuccessEvent(_mapToList(value), options));
+          _publishLog(
+              ReadAllSuccessEvent(value.toListOfKeyAndValues(), options));
         }
       },
       (error, _) {
@@ -331,13 +332,6 @@ class RealRxStorage<Key extends Object, Options,
 
     return _disposeMemo.runOnce(_bag.dispose).then((_) => _onDispose?.call());
   }
-}
-
-List<KeyAndValue<Key, Object?>> _mapToList<Key extends Object>(
-    Map<Key, Object?> map) {
-  final pairs =
-      map.entries.map((e) => KeyAndValue<Key, Object?>(e.key, e.value));
-  return List.unmodifiable(pairs);
 }
 
 /// Scope function extension
