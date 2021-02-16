@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'event.dart';
 import 'logger.dart';
 
@@ -11,6 +13,7 @@ class DefaultLogger<Key extends Object, Options>
   /// Construct a [DefaultLogger].
   const DefaultLogger();
 
+  @nonVirtual
   @override
   void log(LoggerEvent<Key, Options> event) {
     //
@@ -142,8 +145,12 @@ class DefaultLogger<Key extends Object, Options>
     // END: WRITE
     //
 
-    throw Exception('Unhandled event: $event');
+    logOther(event);
   }
+
+  /// Logs other events.
+  void logOther(LoggerEvent<Key, Options> event) =>
+      throw Exception('Unhandled event: $event');
 
   static String _concatOptionsIfNotNull(Object? options,
           [String separator = ',']) =>

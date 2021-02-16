@@ -13,11 +13,14 @@ abstract class StringKeyStorage extends Storage<String, void> {
 abstract class StringKeyRxStorage extends StringKeyStorage
     implements RxStorage<String, void> {}
 
-class FakeDefaultLogger extends DefaultLogger<String, void> {
+abstract class FakeLogger extends Logger<String, void> {}
+
+class FakeDefaultLogger extends DefaultLogger<String, void>
+    implements FakeLogger {
   const FakeDefaultLogger();
 
   @override
-  void log(LoggerEvent<String, void> event) {
+  void logOther(LoggerEvent<String, void> event) {
     if (event is ReloadSuccessEvent) {
       print('ReloadSuccessEvent ${event.map}');
       return;
@@ -26,8 +29,7 @@ class FakeDefaultLogger extends DefaultLogger<String, void> {
       print('ReloadFailureEvent ${event.error}');
       return;
     }
-
-    super.log(event);
+    super.logOther(event);
   }
 }
 
@@ -114,7 +116,7 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage, StringKeyStorage {
   FakeRxStorage(
     FutureOr<StringKeyStorage> storageOrFuture, [
-    Logger<String, void>? logger,
+    FakeLogger? logger,
     void Function()? onDispose,
   ]) : super(
           storageOrFuture,
