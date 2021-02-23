@@ -49,8 +49,7 @@ class AsyncQueue<T> {
     if (_subscription == null || _blockS.isClosed) {
       throw StateError('AsyncQueue has been disposed!');
     }
-    final future =
-        Future.wait<void>([_subscription!.cancel(), _blockS.close()]);
+    final future = _subscription!.cancel().then<void>((_) => _blockS.close());
     _subscription = null;
     return future;
   }
