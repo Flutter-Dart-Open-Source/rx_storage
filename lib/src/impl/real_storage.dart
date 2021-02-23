@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:disposebag/disposebag.dart' hide Logger;
 import 'package:meta/meta.dart';
-import 'package:rx_storage/src/async/async_queue.dart';
 import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../async/async_memoizer.dart';
+import '../async/async_queue.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
 import '../logger/event.dart';
