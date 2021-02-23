@@ -41,6 +41,7 @@ void main() {
     tearDown(() async {
       // disable before clearing :)
       storage.throws = false;
+      storage.readAllThrows = false;
       await rxStorage.clear();
     });
 
@@ -72,6 +73,9 @@ void main() {
       expect(rxStorage.getDouble('double'), throwsException);
       expect(rxStorage.getStringList('List'), throwsException);
       expect(rxStorage.readUser(), throwsException);
+
+      // forward error.
+      storage.readAllThrows = true;
       expect(rxStorage.readAll(), throwsException);
     });
 
@@ -165,7 +169,15 @@ void main() {
       expect(await rxStorage.readUser(), null);
 
       // forward error.
+      // failed when clearing.
+      storage.readAllThrows = false;
       storage.throws = true;
+      await expectLater(rxStorage.clear(), throwsException);
+
+      // forward error.
+      // failed when reading all.
+      storage.readAllThrows = true;
+      storage.throws = false;
       expect(rxStorage.clear(), throwsException);
     });
 

@@ -49,6 +49,7 @@ class FakeStorage implements StringKeyStorage {
   Map<String, Object?> _map;
   Map<String, Object?>? _pendingMap;
   var _throws = false;
+  var _readAllThrows = false;
 
   FakeStorage(Map<String, Object?> map) : _map = Map<String, Object?>.of(map);
 
@@ -56,6 +57,8 @@ class FakeStorage implements StringKeyStorage {
       _pendingMap = Map<String, Object?>.of(map);
 
   set throws(bool b) => _throws = b;
+
+  set readAllThrows(bool b) => _readAllThrows = b;
 
   Future<T> _wrap<T>(T value) =>
       _throws ? Future.error(Exception('Throws...')) : SynchronousFuture(value);
@@ -114,8 +117,9 @@ class FakeStorage implements StringKeyStorage {
       _getValue<Object>(key).then(decoder);
 
   @override
-  Future<Map<String, Object?>> readAll([void _]) =>
-      _wrap(<String, Object?>{..._map});
+  Future<Map<String, Object?>> readAll([void _]) => _readAllThrows
+      ? Future.error(Exception('Cannot read all'))
+      : _wrap(<String, Object?>{..._map});
 }
 
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
