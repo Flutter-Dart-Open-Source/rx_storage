@@ -65,22 +65,3 @@ class AsyncQueue<T> {
     return completer.future;
   }
 }
-
-void main() {
-  final queue = AsyncQueue<int>();
-
-  queue.enqueue(() {
-    print('Start 1');
-    return Future.delayed(const Duration(seconds: 2), () => 1);
-  }).then(print);
-
-  queue.enqueue(() {
-    print('Start 2');
-    return Future.delayed(const Duration(seconds: 2), () => 2);
-  }).then(print);
-
-  queue.enqueue(() {
-    print('Start 3');
-    return Future.delayed(const Duration(seconds: 2), () => 3);
-  }).then(print);
-}
