@@ -134,14 +134,14 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
       (s) => s.reload(),
       (value, s) {
         sendChange(computeMap(before, value));
-        log(ReloadSuccessEvent(value));
+        logIfEnabled(ReloadSuccessEvent(value));
       },
-      (error, _) => log(ReloadFailureEvent(error)),
+      (error, _) => logIfEnabled(ReloadFailureEvent(error)),
     );
   }
 }
 
-Map<String, Object?> computeMap(
+Map<String, KeyAndValue<String, Object?>> computeMap(
   Map<String, Object?> before,
   Map<String, Object?> after,
 ) {
@@ -149,5 +149,5 @@ Map<String, Object?> computeMap(
   return <String, Object?>{
     ...after,
     for (final k in deletedKeys) k: null,
-  };
+  }.map((key, value) => MapEntry(key, KeyAndValue(key, value, dynamic)));
 }

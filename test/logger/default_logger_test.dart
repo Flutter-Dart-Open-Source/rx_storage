@@ -3,30 +3,31 @@ import 'package:test/test.dart';
 
 void main() {
   group('DefaultLogger<String, void>', () {
-    final logger = DefaultLogger<String, void>();
+    final logger = DefaultLogger<String, void>(tag: 'TAG');
 
     test('KeysChangedEvent', () {
-      const pairs = [
-        KeyAndValue('key1', 'value1'),
-        KeyAndValue('key2', 2),
+      const keyAndValues = [
+        KeyAndValue('key1', 'value1', String),
+        KeyAndValue('key2', 2, int),
       ];
 
       expect(
-        () => logger.log(KeysChangedEvent(pairs)),
+        () => logger.log(KeysChangedEvent(keyAndValues)),
         prints([
-          ' ↓ Key changes',
-          "    → { 'key1': value1 }",
-          "    → { 'key2': 2 }\n",
+          'TAG ↓ Key changes',
+          '    → { key: key1, type: String, value: value1 }',
+          '    → { key: key2, type: int, value: 2 }\n',
         ].join('\n')),
       );
       ;
     });
 
     test('OnDataStreamEvent', () {
-      const pair = KeyAndValue('key1', 'value1');
+      const pair = KeyAndValue('key1', 'value1', String);
       expect(
         () => logger.log(OnDataStreamEvent(pair)),
-        prints(" → Stream emits data: { 'key1': value1 }\n"),
+        prints(
+            'TAG → Stream emits data: { key: key1, type: String, value: value1 }\n'),
       );
     });
 
@@ -36,7 +37,7 @@ void main() {
       expect(
         () => logger
             .log(OnErrorStreamEvent(RxStorageError(exception, stackTrace))),
-        prints(' → Stream emits error: $exception, $stackTrace\n'),
+        prints('TAG → Stream emits error: $exception, $stackTrace\n'),
       );
     });
 
@@ -46,8 +47,8 @@ void main() {
       const value = 'value';
       expect(
         () => logger
-            .log(ReadValueSuccessEvent(KeyAndValue(key, value), type, null)),
-        prints(" → Read: type=String, key='key' → value\n"),
+            .log(ReadValueSuccessEvent(KeyAndValue(key, value, type), null)),
+        prints('TAG → Read: key=key, type=String → value\n'),
       );
     });
 
@@ -57,37 +58,37 @@ void main() {
       const value = 'value';
       expect(
         () =>
-            logger.log(WriteSuccessEvent(KeyAndValue(key, value), type, null)),
-        prints(" ← Write: key='key', value=value, type=String → success\n"),
+            logger.log(WriteSuccessEvent(KeyAndValue(key, value, type), null)),
+        prints('TAG ← Write: key=key, type=String, value=value → success\n'),
       );
     });
   });
 
   group('DefaultLogger<String, int>', () {
-    final logger = DefaultLogger<String, int>();
+    final logger = DefaultLogger<String, int>(tag: 'TAG');
 
     test('KeysChangedEvent', () {
-      const pairs = [
-        KeyAndValue('key1', 'value1'),
-        KeyAndValue('key2', 2),
+      const keyAndValues = [
+        KeyAndValue('key1', 'value1', String),
+        KeyAndValue('key2', 2, int),
       ];
 
       expect(
-        () => logger.log(KeysChangedEvent(pairs)),
+        () => logger.log(KeysChangedEvent(keyAndValues)),
         prints([
-          ' ↓ Key changes',
-          "    → { 'key1': value1 }",
-          "    → { 'key2': 2 }\n",
+          'TAG ↓ Key changes',
+          '    → { key: key1, type: String, value: value1 }',
+          '    → { key: key2, type: int, value: 2 }\n',
         ].join('\n')),
       );
-      ;
     });
 
     test('OnDataStreamEvent', () {
-      const pair = KeyAndValue('key1', 'value1');
+      const pair = KeyAndValue('key1', 'value1', String);
       expect(
         () => logger.log(OnDataStreamEvent(pair)),
-        prints(" → Stream emits data: { 'key1': value1 }\n"),
+        prints(
+            'TAG → Stream emits data: { key: key1, type: String, value: value1 }\n'),
       );
     });
 
@@ -97,7 +98,7 @@ void main() {
       expect(
         () => logger
             .log(OnErrorStreamEvent(RxStorageError(exception, stackTrace))),
-        prints(' → Stream emits error: $exception, $stackTrace\n'),
+        prints('TAG → Stream emits error: $exception, $stackTrace\n'),
       );
     });
 
@@ -107,8 +108,8 @@ void main() {
       const value = 'value';
       expect(
         () =>
-            logger.log(ReadValueSuccessEvent(KeyAndValue(key, value), type, 0)),
-        prints(" → Read: type=String, key='key', options=0 → value\n"),
+            logger.log(ReadValueSuccessEvent(KeyAndValue(key, value, type), 0)),
+        prints('TAG → Read: key=key, type=String, options=0 → value\n'),
       );
     });
 
@@ -117,9 +118,9 @@ void main() {
       const key = 'key';
       const value = 'value';
       expect(
-        () => logger.log(WriteSuccessEvent(KeyAndValue(key, value), type, 0)),
+        () => logger.log(WriteSuccessEvent(KeyAndValue(key, value, type), 0)),
         prints(
-            " ← Write: key='key', value=value, type=String, options=0 → success\n"),
+            'TAG ← Write: key=key, type=String, options=0, value=value → success\n'),
       );
     });
   });
