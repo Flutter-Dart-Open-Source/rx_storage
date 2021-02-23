@@ -4,8 +4,6 @@ import 'package:rx_storage/rx_storage.dart';
 
 import 'utils/synchronous_future.dart';
 
-Future<T> _wrap<T>(T value) => SynchronousFuture(value);
-
 abstract class StringKeyStorage extends Storage<String, void> {
   Future<Map<String, Object?>> reload();
 }
@@ -50,11 +48,17 @@ class ReloadFailureEvent implements LoggerEvent<String, void> {
 class FakeStorage implements StringKeyStorage {
   Map<String, Object?> _map;
   Map<String, Object?>? _pendingMap;
+  var _throws = false;
 
   FakeStorage(Map<String, Object?> map) : _map = Map<String, Object?>.of(map);
 
   set map(Map<String, Object?> map) =>
       _pendingMap = Map<String, Object?>.of(map);
+
+  set throws(bool b) => _throws = b;
+
+  Future<T> _wrap<T>(T value) =>
+      _throws ? Future.error(Exception('Throws...')) : SynchronousFuture(value);
 
   Future<bool> _setValue(String key, Object? value) {
     if (value is List<String>?) {
