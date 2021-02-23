@@ -1,4 +1,5 @@
 import 'package:rx_storage/rx_storage.dart';
+import 'package:stack_trace/stack_trace.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -37,7 +38,8 @@ void main() {
       expect(
         () => logger
             .log(OnErrorStreamEvent(RxStorageError(exception, stackTrace))),
-        prints('TAG → Stream emits error: $exception, $stackTrace\n'),
+        prints(
+            'TAG → Stream emits error: $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
 
@@ -98,7 +100,8 @@ void main() {
       expect(
         () => logger
             .log(OnErrorStreamEvent(RxStorageError(exception, stackTrace))),
-        prints('TAG → Stream emits error: $exception, $stackTrace\n'),
+        prints(
+            'TAG → Stream emits error: $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
 
