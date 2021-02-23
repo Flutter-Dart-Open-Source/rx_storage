@@ -97,6 +97,24 @@ void main() {
       );
     });
 
+    test('ClearSuccessEvent', () {
+      expect(
+        () => logger.log(ClearSuccessEvent(null)),
+        prints('TAG ← Clear → success\n'),
+      );
+    });
+
+    test('ClearFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ClearFailureEvent(error, null)),
+        prints('TAG ← Clear → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
     test('WriteSuccessEvent', () {
       const type = String;
       const key = 'key';
@@ -216,6 +234,25 @@ void main() {
         () => logger.log(ReadAllFailureEvent(error, 3)),
         prints(
             'TAG → Read all: options=3 → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
+    test('ClearSuccessEvent', () {
+      expect(
+        () => logger.log(ClearSuccessEvent(2)),
+        prints('TAG ← Clear: options=2 → success\n'),
+      );
+    });
+
+    test('ClearFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ClearFailureEvent(error, 2)),
+        prints(
+            'TAG ← Clear: options=2 → $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
 
