@@ -1,18 +1,26 @@
 import 'dart:async';
 
+/// TODO
 class AsyncQueueEntry<T> {
+  /// TODO
   final Completer<T> completer;
+
+  /// TODO
   final AsyncQueueBlock<T> block;
 
+  /// TODO
   AsyncQueueEntry(this.completer, this.block);
 }
 
+/// TODO
 typedef AsyncQueueBlock<T> = Future<T> Function();
 
+/// TODO
 class AsyncQueue<T> {
   final _blockS = StreamController<AsyncQueueEntry<T>>();
   StreamSubscription<T>? _subscription;
 
+  /// TODO
   AsyncQueue() {
     _subscription = _blockS.stream.asyncMap((entry) {
       final completer = entry.completer;
@@ -28,13 +36,17 @@ class AsyncQueue<T> {
       return future.then((v) {
         completer.complete(v);
         return v;
-      }).catchError(completer.completeError);
+      }).onError<Object>((Object e, StackTrace s) {
+        completer.completeError(e, s);
+        throw e;
+      });
     }).listen(
       null,
       onError: (Object _) {},
     );
   }
 
+  /// TODO
   Future<void> dispose() {
     if (_subscription == null || _blockS.isClosed) {
       throw StateError('AsyncQueue has been disposed!');
@@ -45,6 +57,7 @@ class AsyncQueue<T> {
     return future;
   }
 
+  /// TODO
   Future<T> enqueue(AsyncQueueBlock<T> block) {
     if (_subscription == null || _blockS.isClosed) {
       throw StateError('AsyncQueue has been disposed!');
