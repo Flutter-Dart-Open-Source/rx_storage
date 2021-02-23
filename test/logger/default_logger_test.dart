@@ -107,6 +107,23 @@ void main() {
         prints('TAG ← Write: key=key, type=String, value=value → success\n'),
       );
     });
+
+    test('WriteFailureEvent', () {
+      const type = String;
+      const key = 'key';
+      const value = 'value';
+
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger
+            .log(WriteFailureEvent(KeyAndValue(key, value, type), null, error)),
+        prints(
+            'TAG ← Write: key=key, type=String, value=value → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
   });
 
   group('DefaultLogger<String, int>', () {
@@ -210,6 +227,23 @@ void main() {
         () => logger.log(WriteSuccessEvent(KeyAndValue(key, value, type), 0)),
         prints(
             'TAG ← Write: key=key, type=String, options=0, value=value → success\n'),
+      );
+    });
+
+    test('WriteFailureEvent', () {
+      const type = String;
+      const key = 'key';
+      const value = 'value';
+
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger
+            .log(WriteFailureEvent(KeyAndValue(key, value, type), 2, error)),
+        prints(
+            'TAG ← Write: key=key, type=String, options=2, value=value → $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
   });
