@@ -35,9 +35,10 @@ extension MapToListOfKeyAndValuesExtension<Key extends Object>
   /// Convert this map to list of [KeyAndValue]s.
   List<KeyAndValue<Key, Object?>> toListOfKeyAndValues() {
     final pairs = entries.map((e) {
-      // value is null or value is not a [KeyAndValue].
-      assert(e.value == null || e.value is! KeyAndValue<Key, Object?>);
-      return KeyAndValue<Key, Object?>(e.key, e.value, dynamic);
+      final value = e.value;
+      return value is KeyAndValue<Key, Object?>
+          ? value
+          : KeyAndValue<Key, Object?>(e.key, value, dynamic);
     });
     return List.unmodifiable(pairs);
   }

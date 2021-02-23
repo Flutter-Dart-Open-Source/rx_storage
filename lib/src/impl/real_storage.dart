@@ -71,7 +71,7 @@ class RealRxStorage<Key extends Object, Options,
 
     _keyValuesSubject
         .map<LoggerEvent<Key, Options>>(
-            (map) => KeysChangedEvent(List.unmodifiable(map.values)))
+            (map) => KeysChangedEvent(map.toListOfKeyAndValues()))
         .listen(_loggerEventController!.add)
         .disposedBy(_bag);
   }
