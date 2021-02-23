@@ -117,7 +117,7 @@ class DefaultLogger<Key extends Object, Options>
     if (event is ReadAllSuccessEvent<Key, Options>) {
       final all = event.all;
       final options = event.options;
-      print('$tag $downArrow Read all: ${concatOptionsIfNotNull(options, '')}');
+      print('$tag $downArrow Read all${concatOptionsIfNotNull(options, ':')}');
       print(all
           .map((p) => '    $rightArrow ${keyAndValueToString(p)}')
           .join('\n'));
@@ -128,7 +128,7 @@ class DefaultLogger<Key extends Object, Options>
       final options = event.options;
       final error = event.error;
       print(
-          '$tag $rightArrow Read all: ${concatOptionsIfNotNull(options, ':')} $rightArrow $error');
+          '$tag $rightArrow Read all${concatOptionsIfNotNull(options, ':')} $rightArrow $error');
       return;
     }
 
@@ -143,7 +143,7 @@ class DefaultLogger<Key extends Object, Options>
     if (event is ClearSuccessEvent<Key, Options>) {
       final options = event.options;
       print(
-          '$tag $leftArrow Clear: ${concatOptionsIfNotNull(options, ':')} $rightArrow success');
+          '$tag $leftArrow Clear${concatOptionsIfNotNull(options, ':')} $rightArrow success');
       return;
     }
 
@@ -151,7 +151,7 @@ class DefaultLogger<Key extends Object, Options>
       final options = event.options;
       final error = event.error;
       print(
-          '$tag $leftArrow Clear: ${concatOptionsIfNotNull(options, ':')} $rightArrow $error');
+          '$tag $leftArrow Clear${concatOptionsIfNotNull(options, ':')} $rightArrow $error');
       return;
     }
 

@@ -54,6 +54,49 @@ void main() {
       );
     });
 
+    test('ReadValueFailureEvent', () {
+      const type = String;
+      const key = 'key';
+
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ReadValueFailureEvent(key, type, error, null)),
+        prints(
+            'TAG → Read: key=key, type=String → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
+    test('ReadAllSuccessEvent', () {
+      const keyAndValues = [
+        KeyAndValue('key1', 'value1', String),
+        KeyAndValue('key2', 2, int),
+      ];
+
+      expect(
+        () => logger.log(ReadAllSuccessEvent(keyAndValues, null)),
+        prints([
+          'TAG ↓ Read all',
+          '    → { key: key1, type: String, value: value1 }',
+          '    → { key: key2, type: int, value: 2 }\n',
+        ].join('\n')),
+      );
+    });
+
+    test('ReadAllFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ReadAllFailureEvent(error, null)),
+        prints(
+            'TAG → Read all → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
     test('WriteSuccessEvent', () {
       const type = String;
       const key = 'key';
@@ -113,6 +156,49 @@ void main() {
         () =>
             logger.log(ReadValueSuccessEvent(KeyAndValue(key, value, type), 0)),
         prints('TAG → Read: key=key, type=String, options=0 → value\n'),
+      );
+    });
+
+    test('ReadValueFailureEvent', () {
+      const type = String;
+      const key = 'key';
+
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ReadValueFailureEvent(key, type, error, 2)),
+        prints(
+            'TAG → Read: key=key, type=String, options=2 → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
+    test('ReadAllSuccessEvent', () {
+      const keyAndValues = [
+        KeyAndValue('key1', 'value1', String),
+        KeyAndValue('key2', 2, int),
+      ];
+
+      expect(
+        () => logger.log(ReadAllSuccessEvent(keyAndValues, 2)),
+        prints([
+          'TAG ↓ Read all: options=2',
+          '    → { key: key1, type: String, value: value1 }',
+          '    → { key: key2, type: int, value: 2 }\n',
+        ].join('\n')),
+      );
+    });
+
+    test('ReadAllFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(ReadAllFailureEvent(error, 3)),
+        prints(
+            'TAG → Read all: options=3 → $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
 
