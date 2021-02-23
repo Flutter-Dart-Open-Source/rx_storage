@@ -15,6 +15,29 @@ void main() {
       expect(true, isTrue);
     });
 
+    test('KeyAndValue.==', () {
+      expect(
+        KeyAndValue('key1', 'value', String),
+        KeyAndValue('key1', 'value', String),
+      );
+      expect(
+        KeyAndValue('key2', 2, int),
+        KeyAndValue('key2', 2, int),
+      );
+      expect(
+        KeyAndValue('key3', 2.5, double),
+        KeyAndValue('key3', 2.5, double),
+      );
+      expect(
+        KeyAndValue('key4', true, bool),
+        KeyAndValue('key4', true, bool),
+      );
+      expect(
+        KeyAndValue('key5', null, Null),
+        KeyAndValue('key5', null, Null),
+      );
+    });
+
     test('KeyAndValue.toString', () {
       expect(
         KeyAndValue('key1', 'value', String).toString(),
