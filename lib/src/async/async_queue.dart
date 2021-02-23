@@ -41,10 +41,7 @@ class AsyncQueue<T> {
         completer.completeError(e, s);
         throw e;
       });
-    }).listen(
-      null,
-      onError: (Object _) {},
-    );
+    }).listen(null, onError: (Object _) {});
   }
 
   /// Close queue.
