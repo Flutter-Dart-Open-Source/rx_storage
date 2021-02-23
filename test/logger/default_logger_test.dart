@@ -115,6 +115,25 @@ void main() {
       );
     });
 
+    test('RemoveSuccessEvent', () {
+      expect(
+        () => logger.log(RemoveSuccessEvent('key', null)),
+        prints('TAG ← Remove: key=key → success\n'),
+      );
+    });
+
+    test('RemoveFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(RemoveFailureEvent('key', null, error)),
+        prints(
+            'TAG ← Remove: key=key → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
     test('WriteSuccessEvent', () {
       const type = String;
       const key = 'key';
@@ -253,6 +272,25 @@ void main() {
         () => logger.log(ClearFailureEvent(error, 2)),
         prints(
             'TAG ← Clear: options=2 → $exception\n${Trace.from(stackTrace).terse}\n'),
+      );
+    });
+
+    test('RemoveSuccessEvent', () {
+      expect(
+        () => logger.log(RemoveSuccessEvent('key', 2)),
+        prints('TAG ← Remove: key=key, options=2 → success\n'),
+      );
+    });
+
+    test('RemoveFailureEvent', () {
+      final stackTrace = StackTrace.current;
+      final exception = Exception();
+      final error = RxStorageError(exception, stackTrace);
+
+      expect(
+        () => logger.log(RemoveFailureEvent('key', 3, error)),
+        prints(
+            'TAG ← Remove: key=key, options=3 → $exception\n${Trace.from(stackTrace).terse}\n'),
       );
     });
 
