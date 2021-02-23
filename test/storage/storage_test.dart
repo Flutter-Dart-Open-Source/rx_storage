@@ -192,6 +192,7 @@ void main() {
       expect(await rxStorage.getString('String'), kTestValues2['String']);
 
       // forward error.
+      storage.map = kTestValues;
       storage.throws = true;
       expect(rxStorage.reload(), throwsException);
     });
@@ -219,7 +220,7 @@ void main() {
       );
 
       // forward error.
-      storage.throws = true;
+      storage.readAllThrows = true;
       expect(rxStorage.getKeys(), throwsException);
     });
   });

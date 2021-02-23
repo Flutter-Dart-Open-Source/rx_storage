@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:disposebag/disposebag.dart' hide Logger;
 import 'package:meta/meta.dart';
+import 'package:rx_storage/src/async/async_queue.dart';
 import 'package:rxdart_ext/rxdart_ext.dart';
 
-import '../async_memoizer.dart';
+import '../async/async_memoizer.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
 import '../logger/event.dart';
@@ -24,6 +25,10 @@ class RealRxStorage<Key extends Object, Options,
   /// Trigger subject
   final _keyValuesSubject =
       PublishSubject<Map<Key, KeyAndValue<Key, Object?>>>();
+
+  /// Write queue.
+  /// Basic lock mechanism to prevent concurrent access to asynchronous code.
+  final _writeQueue = AsyncQueue<Object?>();
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
@@ -163,6 +168,11 @@ class RealRxStorage<Key extends Object, Options,
     }
   }
 
+  /// Enqueue writing task to a queue.
+  @protected
+  Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
+      _writeQueue.enqueue(block).then((value) => value as T);
+
   //
   // Get and set methods (implements [Storage])
   //
@@ -219,26 +229,28 @@ class RealRxStorage<Key extends Object, Options,
   }
 
   @override
-  Future<void> clear([Options? options]) async {
+  Future<void> clear([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    final keys = (await _useStorage((s) => s.readAll(options))).keys;
+    return enqueueWritingTask(() async {
+      final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
-    return await useStorageWithHandlers(
-      (s) => s.clear(options),
-      (_, __) {
-        sendChange({for (final k in keys) k: KeyAndValue(k, null, Null)});
+      return await useStorageWithHandlers(
+        (s) => s.clear(options),
+        (_, __) {
+          sendChange({for (final k in keys) k: KeyAndValue(k, null, Null)});
 
-        if (_isLogEnabled) {
-          _publishLog(ClearSuccessEvent(options));
-        }
-      },
-      (error, _) {
-        if (_isLogEnabled) {
-          _publishLog(ClearFailureEvent(error, options));
-        }
-      },
-    );
+          if (_isLogEnabled) {
+            _publishLog(ClearSuccessEvent(options));
+          }
+        },
+        (error, _) {
+          if (_isLogEnabled) {
+            _publishLog(ClearFailureEvent(error, options));
+          }
+        },
+      );
+    });
   }
 
   @override
@@ -246,21 +258,23 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return useStorageWithHandlers(
-      (s) => s.remove(key, options),
-      (_, __) {
-        sendChange({key: KeyAndValue(key, null, Null)});
+    return enqueueWritingTask(() {
+      return useStorageWithHandlers(
+        (s) => s.remove(key, options),
+        (_, __) {
+          sendChange({key: KeyAndValue(key, null, Null)});
 
-        if (_isLogEnabled) {
-          _publishLog(RemoveSuccessEvent(key, options));
-        }
-      },
-      (error, _) {
-        if (_isLogEnabled) {
-          _publishLog(RemoveFailureEvent(key, options, error));
-        }
-      },
-    );
+          if (_isLogEnabled) {
+            _publishLog(RemoveSuccessEvent(key, options));
+          }
+        },
+        (error, _) {
+          if (_isLogEnabled) {
+            _publishLog(RemoveFailureEvent(key, options, error));
+          }
+        },
+      );
+    });
   }
 
   @override
@@ -270,24 +284,26 @@ class RealRxStorage<Key extends Object, Options,
     assert(key != null);
     assert(encoder != null);
 
-    return useStorageWithHandlers(
-      (s) => s.write(key, value, encoder, options),
-      (_, __) {
-        final keyAndValue = KeyAndValue(key, value, T);
+    return enqueueWritingTask(() {
+      return useStorageWithHandlers(
+        (s) => s.write(key, value, encoder, options),
+        (_, __) {
+          final keyAndValue = KeyAndValue(key, value, T);
 
-        sendChange({key: keyAndValue});
+          sendChange({key: keyAndValue});
 
-        if (_isLogEnabled) {
-          _publishLog(WriteSuccessEvent(keyAndValue, options));
-        }
-      },
-      (error, __) {
-        if (_isLogEnabled) {
-          _publishLog(
-              WriteFailureEvent(KeyAndValue(key, value, T), options, error));
-        }
-      },
-    );
+          if (_isLogEnabled) {
+            _publishLog(WriteSuccessEvent(keyAndValue, options));
+          }
+        },
+        (error, __) {
+          if (_isLogEnabled) {
+            _publishLog(
+                WriteFailureEvent(KeyAndValue(key, value, T), options, error));
+          }
+        },
+      );
+    });
   }
 
   //
@@ -340,7 +356,9 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
-    return _disposeMemo.runOnce(_bag.dispose).then((_) => _onDispose?.call());
+    return _disposeMemo
+        .runOnce(() => _writeQueue.dispose().then((_) => _bag.dispose()))
+        .then((_) => _onDispose?.call());
   }
 }
 
