@@ -22,11 +22,13 @@ class FakeDefaultLogger extends DefaultLogger<String, void>
   @override
   void logOther(LoggerEvent<String, void> event) {
     if (event is ReloadSuccessEvent) {
-      print('ReloadSuccessEvent ${event.map}');
+      print(
+          '$tag ${DefaultLogger.rightArrow} ReloadSuccessEvent ${DefaultLogger.rightArrow} ${event.map}');
       return;
     }
     if (event is ReloadFailureEvent) {
-      print('ReloadFailureEvent ${event.error}');
+      print(
+          '$tag ${DefaultLogger.rightArrow} ReloadFailureEvent ${DefaultLogger.rightArrow} ${event.error}');
       return;
     }
     super.logOther(event);
@@ -132,7 +134,7 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
 
     return useStorageWithHandlers(
       (s) => s.reload(),
-      (value, s) {
+      (value, _) {
         sendChange(computeMap(before, value));
         logIfEnabled(ReloadSuccessEvent(value));
       },
