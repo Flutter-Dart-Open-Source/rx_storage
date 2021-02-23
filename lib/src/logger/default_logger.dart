@@ -46,12 +46,12 @@ class DefaultLogger<Key extends Object, Options>
   //
   // protected.
   //
-
   @protected
   static String concatOptionsIfNotNull(Object? options,
           [String separator = ',']) =>
       options == null ? '' : '$separator options=$options';
 
+  @nonVirtual
   @protected
   String keyAndValueToString(KeyAndValue<Key, Object?> keyAndValue) =>
       '{ key: ${keyAndValue.key}, type: ${keyAndValue.type}, value: ${_trimValue(keyAndValue.value)} }';
