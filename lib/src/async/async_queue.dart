@@ -1,26 +1,27 @@
 import 'dart:async';
 
-/// TODO
-class AsyncQueueEntry<T> {
-  /// TODO
+import 'package:meta/meta.dart';
+
+class _AsyncQueueEntry<T> {
   final Completer<T> completer;
 
-  /// TODO
   final AsyncQueueBlock<T> block;
 
-  /// TODO
-  AsyncQueueEntry(this.completer, this.block);
+  _AsyncQueueEntry(this.completer, this.block);
 }
 
-/// TODO
+/// Function that returns a [Future].
+@internal
 typedef AsyncQueueBlock<T> = Future<T> Function();
 
-/// TODO
+/// A serial queue that executes single block at a time and it does this in FIFO order, first in, first out.
+/// Serial queue are often used to synchronize access to a specific value or resource to prevent data races to occur.
+@internal
 class AsyncQueue<T> {
-  final _blockS = StreamController<AsyncQueueEntry<T>>();
+  final _blockS = StreamController<_AsyncQueueEntry<T>>();
   StreamSubscription<T>? _subscription;
 
-  /// TODO
+  /// Construct [AsyncQueue].
   AsyncQueue() {
     _subscription = _blockS.stream.asyncMap((entry) {
       final completer = entry.completer;
@@ -46,7 +47,7 @@ class AsyncQueue<T> {
     );
   }
 
-  /// TODO
+  /// Close queue.
   Future<void> dispose() {
     if (_subscription == null || _blockS.isClosed) {
       throw StateError('AsyncQueue has been disposed!');
@@ -57,14 +58,33 @@ class AsyncQueue<T> {
     return future;
   }
 
-  /// TODO
+  /// Add block to queue.
   Future<T> enqueue(AsyncQueueBlock<T> block) {
     if (_subscription == null || _blockS.isClosed) {
       throw StateError('AsyncQueue has been disposed!');
     }
 
     final completer = Completer<T>.sync();
-    _blockS.add(AsyncQueueEntry(completer, block));
+    _blockS.add(_AsyncQueueEntry(completer, block));
     return completer.future;
   }
+}
+
+void main() {
+  final queue = AsyncQueue<int>();
+
+  queue.enqueue(() {
+    print('Start 1');
+    return Future.delayed(const Duration(seconds: 2), () => 1);
+  }).then(print);
+
+  queue.enqueue(() {
+    print('Start 2');
+    return Future.delayed(const Duration(seconds: 2), () => 2);
+  }).then(print);
+
+  queue.enqueue(() {
+    print('Start 3');
+    return Future.delayed(const Duration(seconds: 2), () => 3);
+  }).then(print);
 }
