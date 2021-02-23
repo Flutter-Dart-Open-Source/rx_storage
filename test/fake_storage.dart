@@ -60,21 +60,25 @@ class FakeStorage implements StringKeyStorage {
 
   set readAllThrows(bool b) => _readAllThrows = b;
 
-  Future<T> _wrap<T>(T value) =>
-      _throws ? Future.error(Exception('Throws...')) : SynchronousFuture(value);
+  Future<T>? _wrapCanThrows<T>(T Function() value) => _throws
+      ? Future.error(Exception('Throws...'))
+      : SynchronousFuture(value());
 
-  Future<bool> _setValue(String key, Object? value) {
-    if (value is List<String>?) {
-      _map[key] = value?.toList();
-    } else {
-      _map[key] = value;
-    }
-    return _wrap(true);
+  Future<void> _setValue(String key, Object? value) {
+    return _wrapCanThrows(() {
+      if (value is List<String>?) {
+        _map[key] = value?.toList();
+      } else {
+        _map[key] = value;
+      }
+    })!;
   }
 
   Future<T?> _getValue<T>(String key) {
-    final value = _map[key] as T?;
-    return value is List<String> ? _wrap(value.toList() as T) : _wrap(value);
+    return _wrapCanThrows(() {
+      final value = _map[key] as T?;
+      return value is List<String> ? value.toList() as T? : value;
+    })!;
   }
 
   //
@@ -82,14 +86,11 @@ class FakeStorage implements StringKeyStorage {
   //
 
   @override
-  Future<void> clear([void _]) {
-    _map.clear();
-    return _wrap(true);
-  }
+  Future<void> clear([void _]) => _wrapCanThrows(_map.clear)!;
 
   @override
   Future<bool> containsKey(String key, [void _]) =>
-      _wrap(_map.containsKey(key));
+      _wrapCanThrows(() => _map.containsKey(key))!;
 
   @override
   Future<void> write<T extends Object>(
@@ -100,9 +101,11 @@ class FakeStorage implements StringKeyStorage {
   @override
   Future<Map<String, Object?>> reload() {
     if (_pendingMap != null) {
-      _map = _pendingMap!;
-      _pendingMap = null;
-      return _wrap(_map);
+      return _wrapCanThrows(() {
+        _map = _pendingMap!;
+        _pendingMap = null;
+        return _map;
+      })!;
     } else {
       throw StateError('Cannot reload');
     }
@@ -119,7 +122,7 @@ class FakeStorage implements StringKeyStorage {
   @override
   Future<Map<String, Object?>> readAll([void _]) => _readAllThrows
       ? Future.error(Exception('Cannot read all'))
-      : _wrap(<String, Object?>{..._map});
+      : SynchronousFuture(<String, Object?>{..._map});
 }
 
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
