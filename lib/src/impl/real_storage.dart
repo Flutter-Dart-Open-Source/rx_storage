@@ -168,7 +168,7 @@ class RealRxStorage<Key extends Object, Options,
     }
   }
 
-  /// Enqueue writing task to a queue.
+  /// Enqueue writing task to a [AsyncQueue].
   @protected
   Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
       _writeQueue.enqueue(block).then((value) => value as T);

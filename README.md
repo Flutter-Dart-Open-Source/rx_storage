@@ -43,13 +43,15 @@ A simple usage example:
 ```dart
 import 'package:rx_storage/rx_storage.dart';
 
-class StorageAdapter implements Storage { ... }
+class StorageAdapter implements Storage<String, void> { ... }
 
-main() {
-  final Storage adapter = StorageAdapter();
-  final RxStorage rxStorage = RxStorage(adapter);
+main() async {
+  final adapter = StorageAdapter();
+  final rxStorage = RxStorage<String, void>(adapter);
 
-  rxStorage.getStringStream('key').listen((value) { ... });
+  rxStorage.observe('key', (v) => v as String?).listen((String? s) { ... });
+  await rxStorage.write('key', 'a String', (v) => v);
+  await rxStorage.read('key', (v) => v as String?);
 }
 ```
 
