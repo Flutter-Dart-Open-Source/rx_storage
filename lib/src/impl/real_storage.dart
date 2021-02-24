@@ -316,15 +316,10 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    FutureOr<T?> convert(KeyAndValue<Object, Object?> entry) {
-      if (identical(entry, _initialKeyValue)) {
-        return _useStorage((s) => s.read<T>(key, decoder, options));
-      } else {
-        // ignore assertion if [entry.type] is `Null` or `dynamic`.
-        assert(entry.type == Null || entry.type == dynamic || entry.type == T);
-        return entry.value as FutureOr<T?>;
-      }
-    }
+    FutureOr<T?> convert(KeyAndValue<Object, Object?> entry) =>
+        identical(entry, _initialKeyValue)
+            ? _useStorage((s) => s.read<T>(key, decoder, options))
+            : entry.value as FutureOr<T?>;
 
     final stream = _keyValuesSubject
         .toSingleSubscriptionStream()

@@ -69,6 +69,16 @@ void main() {
           noSuchStream,
           emits(isNull),
         );
+
+        expect(
+          rxStorage.getStringStream('String'),
+          emitsInOrder(<Matcher>[
+            anything,
+            emitsError(isA<TypeError>()),
+          ]),
+        );
+        await pumpEventQueue(times: 50);
+        await rxStorage.setDouble('String', 999);
       },
     );
 
