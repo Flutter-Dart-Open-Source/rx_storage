@@ -3,7 +3,7 @@
 -   **Breaking**:
     -   Opt into nullsafety.
     -   Set Dart SDK constraints to `>=2.12.0-0 <3.0.0`.
-    -   Big refactoring to `Logger`, `RealRxStorage` implementation.
+    -   Big refactoring for `Logger`, `RealRxStorage` implementation.
 
 ## 0.0.2 - Jan 4, 2021
 
