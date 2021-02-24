@@ -1,3 +1,5 @@
+import 'package:stack_trace/stack_trace.dart';
+
 /// An Object which acts as a tuple containing both an error and the
 /// corresponding stack trace.
 class RxStorageError {
@@ -5,11 +7,13 @@ class RxStorageError {
   final Object error;
 
   /// A reference to the wrapped [StackTrace]
-  final StackTrace stackTrace;
+  late final Trace trace = Trace.from(_stackTrace).terse;
+
+  final StackTrace _stackTrace;
 
   /// Constructs an object containing both an [error] and the
   /// corresponding [stackTrace].
-  const RxStorageError(this.error, this.stackTrace);
+  RxStorageError(this.error, StackTrace stackTrace) : _stackTrace = stackTrace;
 
   @override
   bool operator ==(Object other) =>
@@ -17,11 +21,11 @@ class RxStorageError {
       other is RxStorageError &&
           runtimeType == other.runtimeType &&
           error == other.error &&
-          stackTrace == other.stackTrace;
+          trace == other.trace;
 
   @override
-  int get hashCode => error.hashCode ^ stackTrace.hashCode;
+  int get hashCode => error.hashCode ^ trace.hashCode;
 
   @override
-  String toString() => '$error, $stackTrace';
+  String toString() => '$error\n$trace';
 }

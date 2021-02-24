@@ -15,20 +15,20 @@ abstract class LoggerEvent<Key extends Object, Options> {}
 class KeysChangedEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// A list containing all changed values associated with keys.
-  final List<KeyAndValue<Key, Object?>> pairs;
+  final List<KeyAndValue<Key, Object?>> keyAndValues;
 
   /// Construct a [KeysChangedEvent].
-  KeysChangedEvent(this.pairs);
+  KeysChangedEvent(this.keyAndValues);
 }
 
 /// Stream emits new data event.
 class OnDataStreamEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// Changed value with key.
-  final KeyAndValue<Key, Object?> pair;
+  final KeyAndValue<Key, Object?> keyAndValue;
 
   /// Construct a [OnDataStreamEvent].
-  OnDataStreamEvent(this.pair);
+  OnDataStreamEvent(this.keyAndValue);
 }
 
 /// Stream emits error event.
@@ -53,16 +53,13 @@ class OnErrorStreamEvent<Key extends Object, Options>
 class ReadValueSuccessEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// Read value with key.
-  final KeyAndValue<Key, Object?> pair;
-
-  /// The type of read value.
-  final Type type;
+  final KeyAndValue<Key, Object?> keyAndValue;
 
   /// The options.
   final Options? options;
 
   /// Construct a [ReadValueSuccessEvent].
-  ReadValueSuccessEvent(this.pair, this.type, this.options);
+  ReadValueSuccessEvent(this.keyAndValue, this.options);
 }
 
 /// Read value failed.
@@ -174,26 +171,20 @@ class RemoveFailureEvent<Key extends Object, Options>
 class WriteSuccessEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// The key and value.
-  final KeyAndValue<Key, Object?> pair;
-
-  /// The type of value.
-  final Type type;
+  final KeyAndValue<Key, Object?> keyAndValue;
 
   /// The options.
   final Options? options;
 
   /// Construct a [WriteSuccessEvent].
-  WriteSuccessEvent(this.pair, this.type, this.options);
+  WriteSuccessEvent(this.keyAndValue, this.options);
 }
 
 /// Write failed.
 class WriteFailureEvent<Key extends Object, Options>
     implements LoggerEvent<Key, Options> {
   /// The key and value.
-  final KeyAndValue<Key, Object?> pair;
-
-  /// The type of value.
-  final Type type;
+  final KeyAndValue<Key, Object?> keyAndValue;
 
   /// The options.
   final Options? options;
@@ -202,7 +193,7 @@ class WriteFailureEvent<Key extends Object, Options>
   final RxStorageError error;
 
   /// Construct a [WriteFailureEvent].
-  WriteFailureEvent(this.pair, this.type, this.options, this.error);
+  WriteFailureEvent(this.keyAndValue, this.options, this.error);
 }
 
 //

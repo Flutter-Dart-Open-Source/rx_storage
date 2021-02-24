@@ -4,8 +4,6 @@ import 'package:rx_storage/rx_storage.dart';
 
 import 'utils/synchronous_future.dart';
 
-Future<T> _wrap<T>(T value) => SynchronousFuture(value);
-
 abstract class StringKeyStorage extends Storage<String, void> {
   Future<Map<String, Object?>> reload();
 }
@@ -22,11 +20,13 @@ class FakeDefaultLogger extends DefaultLogger<String, void>
   @override
   void logOther(LoggerEvent<String, void> event) {
     if (event is ReloadSuccessEvent) {
-      print('ReloadSuccessEvent ${event.map}');
+      print(
+          '$tag ${DefaultLogger.rightArrow} ReloadSuccessEvent ${DefaultLogger.rightArrow} ${event.map}');
       return;
     }
     if (event is ReloadFailureEvent) {
-      print('ReloadFailureEvent ${event.error}');
+      print(
+          '$tag ${DefaultLogger.rightArrow} ReloadFailureEvent ${DefaultLogger.rightArrow} ${event.error}');
       return;
     }
     super.logOther(event);
@@ -48,24 +48,37 @@ class ReloadFailureEvent implements LoggerEvent<String, void> {
 class FakeStorage implements StringKeyStorage {
   Map<String, Object?> _map;
   Map<String, Object?>? _pendingMap;
+  var _throws = false;
+  var _readAllThrows = false;
 
   FakeStorage(Map<String, Object?> map) : _map = Map<String, Object?>.of(map);
 
   set map(Map<String, Object?> map) =>
       _pendingMap = Map<String, Object?>.of(map);
 
-  Future<bool> _setValue(String key, Object? value) {
-    if (value is List<String>?) {
-      _map[key] = value?.toList();
-    } else {
-      _map[key] = value;
-    }
-    return _wrap(true);
+  set throws(bool b) => _throws = b;
+
+  set readAllThrows(bool b) => _readAllThrows = b;
+
+  Future<T>? _wrapCanThrows<T>(T Function() value) => _throws
+      ? Future.error(Exception('Throws...'))
+      : SynchronousFuture(value());
+
+  Future<void> _setValue(String key, Object? value) {
+    return _wrapCanThrows(() {
+      if (value is List<String>?) {
+        _map[key] = value?.toList();
+      } else {
+        _map[key] = value;
+      }
+    })!;
   }
 
   Future<T?> _getValue<T>(String key) {
-    final value = _map[key] as T?;
-    return value is List<String> ? _wrap(value.toList() as T) : _wrap(value);
+    return _wrapCanThrows(() {
+      final value = _map[key] as T?;
+      return value is List<String> ? value.toList() as T? : value;
+    })!;
   }
 
   //
@@ -73,14 +86,11 @@ class FakeStorage implements StringKeyStorage {
   //
 
   @override
-  Future<void> clear([void _]) {
-    _map.clear();
-    return _wrap(true);
-  }
+  Future<void> clear([void _]) => _wrapCanThrows(_map.clear)!;
 
   @override
   Future<bool> containsKey(String key, [void _]) =>
-      _wrap(_map.containsKey(key));
+      _wrapCanThrows(() => _map.containsKey(key))!;
 
   @override
   Future<void> write<T extends Object>(
@@ -91,9 +101,11 @@ class FakeStorage implements StringKeyStorage {
   @override
   Future<Map<String, Object?>> reload() {
     if (_pendingMap != null) {
-      _map = _pendingMap!;
-      _pendingMap = null;
-      return _wrap(_map);
+      return _wrapCanThrows(() {
+        _map = _pendingMap!;
+        _pendingMap = null;
+        return _map;
+      })!;
     } else {
       throw StateError('Cannot reload');
     }
@@ -108,8 +120,9 @@ class FakeStorage implements StringKeyStorage {
       _getValue<Object>(key).then(decoder);
 
   @override
-  Future<Map<String, Object?>> readAll([void _]) =>
-      _wrap(<String, Object?>{..._map});
+  Future<Map<String, Object?>> readAll([void _]) => _readAllThrows
+      ? Future.error(Exception('Cannot read all'))
+      : SynchronousFuture(<String, Object?>{..._map});
 }
 
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
@@ -125,23 +138,25 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
         );
 
   @override
-  Future<Map<String, Object?>> reload() async {
-    final handler = (Object? _, Object? __) => null;
-    final before =
-        await useStorageWithHandlers((s) => s.readAll(), handler, handler);
+  Future<Map<String, Object?>> reload() {
+    return enqueueWritingTask(() async {
+      final handler = (Object? _, Object? __) => null;
+      final before =
+          await useStorageWithHandlers((s) => s.readAll(), handler, handler);
 
-    return useStorageWithHandlers(
-      (s) => s.reload(),
-      (value, s) {
-        sendChange(computeMap(before, value));
-        log(ReloadSuccessEvent(value));
-      },
-      (error, _) => log(ReloadFailureEvent(error)),
-    );
+      return useStorageWithHandlers(
+        (s) => s.reload(),
+        (value, _) {
+          sendChange(computeMap(before, value));
+          logIfEnabled(ReloadSuccessEvent(value));
+        },
+        (error, _) => logIfEnabled(ReloadFailureEvent(error)),
+      );
+    });
   }
 }
 
-Map<String, Object?> computeMap(
+Map<String, KeyAndValue<String, Object?>> computeMap(
   Map<String, Object?> before,
   Map<String, Object?> after,
 ) {
@@ -149,5 +164,5 @@ Map<String, Object?> computeMap(
   return <String, Object?>{
     ...after,
     for (final k in deletedKeys) k: null,
-  };
+  }.map((key, value) => MapEntry(key, KeyAndValue(key, value, dynamic)));
 }
