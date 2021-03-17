@@ -6,6 +6,7 @@ import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../async/async_memoizer.dart';
 import '../async/async_queue.dart';
+import '../async/ref_count_resource.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
 import '../logger/event.dart';
@@ -21,6 +22,7 @@ class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
   static const _initialKeyValue = KeyAndValue<Object, Object>(
       'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);
+  final _clearKey = Object();
 
   /// Trigger subject
   final _keyValuesSubject =
@@ -28,7 +30,10 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
-  final _writeQueue = AsyncQueue<Object?>();
+  final _writeQueueResources = RefCountResource<Object, AsyncQueue<Object?>>(
+    create: (key) => AsyncQueue(),
+    onRelease: (key, value) => value.dispose(),
+  );
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
@@ -111,11 +116,22 @@ class RealRxStorage<Key extends Object, Options,
   Future<R> _useStorage<R>(Future<R> Function(S) block) =>
       _storage?.let(block) ?? _storageFuture.then(block);
 
+  Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
+    final queue = _writeQueueResources.acquire(key);
+
+    return queue
+        .enqueue(block)
+        .then((value) => value as T)
+        .whenComplete(() => _writeQueueResources.release(key, queue));
+  }
+
   //
   // Protected
   //
 
   /// Calling [block] with [S] as argument.
+  @protected
+  @nonVirtual
   Future<R> useStorageWithHandlers<R>(
     Future<R> Function(S) block,
     FutureOr<void> Function(R, S) onSuccess,
@@ -146,6 +162,7 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Add changed map to subject to trigger.
   @protected
+  @nonVirtual
   void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
     assert(_debugAssertNotDisposed());
     assert(map != null);
@@ -159,6 +176,7 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Log event if logging is enabled.
   @protected
+  @nonVirtual
   void logIfEnabled(LoggerEvent<Key, Options> event) {
     assert(_debugAssertNotDisposed());
     assert(event != null);
@@ -170,8 +188,9 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Enqueue writing task to a [AsyncQueue].
   @protected
-  Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
-      _writeQueue.enqueue(block).then((value) => value as T);
+  @nonVirtual
+  Future<T> enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) =>
+      _enqueueWritingTask(key, block);
 
   //
   // Get and set methods (implements [Storage])
@@ -232,7 +251,7 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> clear([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return enqueueWritingTask(() async {
+    return _enqueueWritingTask(_clearKey, () async {
       final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
       return await useStorageWithHandlers(
@@ -258,7 +277,7 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
     assert(key != null);
 
-    return enqueueWritingTask(() {
+    return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
         (s) => s.remove(key, options),
         (_, __) {
@@ -284,7 +303,7 @@ class RealRxStorage<Key extends Object, Options,
     assert(key != null);
     assert(encoder != null);
 
-    return enqueueWritingTask(() {
+    return enqueueWritingTask(key, () {
       return useStorageWithHandlers(
         (s) => s.write(key, value, encoder, options),
         (_, __) {
@@ -351,9 +370,10 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
-    return _disposeMemo
-        .runOnce(() => _writeQueue.dispose().then((_) => _bag.dispose()))
-        .then((_) => _onDispose?.call());
+    return _disposeMemo.runOnce(() {
+      _writeQueueResources.releaseAll();
+      return _bag.dispose();
+    }).then((_) => _onDispose?.call());
   }
 }
 

@@ -32,6 +32,11 @@ class RefCountResource<Key, T> {
     }
   }
 
+  void releaseAll() {
+    _items.forEach((key, value) => onRelease?.call(key, value.value));
+    _items.clear();
+  }
+
   int get size => _items.length;
 }
 
