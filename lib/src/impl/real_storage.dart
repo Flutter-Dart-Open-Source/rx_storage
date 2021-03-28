@@ -22,7 +22,6 @@ class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
   static const _initialKeyValue = KeyAndValue<Object, Object>(
       'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);
-  final _clearKey = Object();
 
   /// Trigger subject
   final _keyValuesSubject =
@@ -31,7 +30,10 @@ class RealRxStorage<Key extends Object, Options,
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
   final _writeQueueResources = RefCountResource<Object, AsyncQueue<Object?>>(
-    create: (key) => AsyncQueue(),
+    create: (key) {
+      print('Created for $key');
+      return AsyncQueue();
+    },
     onRelease: (key, value) => value.dispose(),
   );
 
@@ -118,11 +120,25 @@ class RealRxStorage<Key extends Object, Options,
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
     final queue = _writeQueueResources.acquire(key);
+    return queue.enqueue(block).then((value) => value as T).whenComplete(() {
+      final sub = Rx.timer(null, const Duration(seconds: 2)).listen(null)
+        ..disposedBy(_bag);
 
-    return queue
-        .enqueue(block)
-        .then((value) => value as T)
-        .whenComplete(() => _writeQueueResources.release(key, queue));
+      sub.onData((_) {
+        try {
+          _writeQueueResources.release(key, queue);
+        } on StateError catch (e) {
+          print('[RELEASE] $e');
+        }
+        try {
+          _bag.remove(sub);
+        } on DisposedException catch (e) {
+          print('[RELEASE] $e');
+        } on ClearingException catch (e) {
+          print('[RELEASE] $e');
+        }
+      });
+    });
   }
 
   //
@@ -177,20 +193,20 @@ class RealRxStorage<Key extends Object, Options,
   /// Log event if logging is enabled.
   @protected
   @nonVirtual
-  void logIfEnabled(LoggerEvent<Key, Options> event) {
+  void logIfEnabled(LoggerEvent<Key, Options> Function() eventProducer) {
     assert(_debugAssertNotDisposed());
-    assert(event != null);
+    assert(eventProducer != null);
 
     if (_isLogEnabled) {
-      _publishLog(event);
+      _publishLog(eventProducer());
     }
   }
 
   /// Enqueue writing task to a [AsyncQueue].
   @protected
   @nonVirtual
-  Future<T> enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) =>
-      _enqueueWritingTask(key, block);
+  Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
+      _enqueueWritingTask(this, block);
 
   //
   // Get and set methods (implements [Storage])
@@ -251,7 +267,7 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> clear([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _enqueueWritingTask(_clearKey, () async {
+    return _enqueueWritingTask(this, () async {
       final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
       return await useStorageWithHandlers(
@@ -303,7 +319,7 @@ class RealRxStorage<Key extends Object, Options,
     assert(key != null);
     assert(encoder != null);
 
-    return enqueueWritingTask(key, () {
+    return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
         (s) => s.write(key, value, encoder, options),
         (_, __) {
@@ -328,6 +344,25 @@ class RealRxStorage<Key extends Object, Options,
   //
   // Get streams (implements [RxStorage])
   //
+
+  @override
+  Future<void> executeUpdate<T extends Object>(
+      Key key, Decoder<T?> decoder, Encoder<T?> encoder,
+      [Options? options]) {
+    assert(_debugAssertNotDisposed());
+    assert(key != null);
+    assert(decoder != null);
+    assert(encoder != null);
+
+    return _enqueueWritingTask<void>(
+      key,
+      () async {
+        final value =
+            await _useStorage((s) => s.read<T>(key, decoder, options));
+        await _useStorage((s) => s.write<T>(key, value, decoder, options));
+      },
+    );
+  }
 
   @override
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,

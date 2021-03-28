@@ -1,4 +1,4 @@
-/// Convert [T] to type that [Storage] can be persisted.
+/// Convert [T] to type that can be persisted in [Storage].
 /// This used in [Storage.write].
 typedef Encoder<T> = Object? Function(T);
 

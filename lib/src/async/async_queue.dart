@@ -37,7 +37,7 @@ class AsyncQueue<T> {
       return future.then((v) {
         completer.complete(v);
         return v;
-      }).onError<Object>((Object e, StackTrace s) {
+      }).onError<Object>((e, s) {
         completer.completeError(e, s);
         throw e;
       });

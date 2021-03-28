@@ -141,7 +141,7 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
 
   @override
   Future<Map<String, Object?>> reload() {
-    return enqueueWritingTask(_reload, () async {
+    return enqueueWritingTask(() async {
       final handler = (Object? _, Object? __) => null;
       final before =
           await useStorageWithHandlers((s) => s.readAll(), handler, handler);
@@ -150,9 +150,9 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
         (s) => s.reload(),
         (value, _) {
           sendChange(computeMap(before, value));
-          logIfEnabled(ReloadSuccessEvent(value));
+          logIfEnabled(() => ReloadSuccessEvent(value));
         },
-        (error, _) => logIfEnabled(ReloadFailureEvent(error)),
+        (error, _) => logIfEnabled(() => ReloadFailureEvent(error)),
       );
     });
   }

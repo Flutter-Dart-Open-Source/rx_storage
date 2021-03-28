@@ -21,7 +21,7 @@ Future<void> main() async {
     null,
   );
 
-  rxStorage
+  final sub = rxStorage
       .getStringStream('String')
       .listen((v) => print('>>>>>>>>>>>>>>> $v'));
 
@@ -37,14 +37,16 @@ Future<void> main() async {
   stopwatch
     ..reset()
     ..start();
-  print('>>> Start...');
+  print('>>> Start 1...');
 
   for (var i = 0; i < max; i++) {
-    await rxStorage.get(list[i % list.length]);
+    final key = list[i % list.length];
+    final value = await rxStorage.get(key);
+    await rxStorage.write(key, value, (i) => i);
   }
 
   stopwatch.stop();
-  print('<<< End... ${stopwatch.elapsedMilliseconds}');
+  print('<<< End 1... ${stopwatch.elapsedMilliseconds}');
   print('-------------------------------------------');
 
   //
@@ -57,12 +59,15 @@ Future<void> main() async {
   stopwatch
     ..reset()
     ..start();
-  print('>>> Start...');
+  print('>>> Start 2...');
 
-  rxStorage.getStringStream('key').listen((event) {
+  late StreamSubscription<String?> sub2;
+  sub2 = rxStorage.getStringStream('key').listen((event) {
     if (event == max.toString()) {
       stopwatch.stop();
-      print('<<< End... ${stopwatch.elapsedMilliseconds}');
+      print('<<< End 2... ${stopwatch.elapsedMilliseconds}');
+
+      sub2.cancel();
       completer.complete();
     }
   });
@@ -71,4 +76,14 @@ Future<void> main() async {
   }
 
   await completer.future;
+  await sub.cancel();
+
+  await Future<void>.delayed(const Duration(seconds: 2));
+  for (var i = 0; i < max; i++) {
+    final key = list[i % list.length];
+    final value = await rxStorage.get(key);
+    await rxStorage.write(key, value, (i) => i);
+  }
+
+  await rxStorage.dispose();
 }

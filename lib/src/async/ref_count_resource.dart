@@ -21,7 +21,7 @@ class RefCountResource<Key, T> {
 
   void release(Key key, T value) {
     final existing = _items[key];
-    if (existing == null || existing.value != value) {
+    if (existing == null || !identical(existing.value, value)) {
       throw StateError(
           'inconsistent release for key $key, seems like value $value was leaked or never acquired');
     }
