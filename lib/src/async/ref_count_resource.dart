@@ -46,22 +46,3 @@ class _Item<T> {
 
   _Item(this.value);
 }
-
-void main() {
-  final ref = RefCountResource<String, int>(create: (i) {
-    print('call $i');
-    return 2;
-  });
-
-  print(ref.acquire('1'));
-  print(ref.acquire('1'));
-  print(ref.acquire('1'));
-
-  ref.release('1', 2);
-  ref.release('1', 2);
-  ref.release('1', 3);
-
-  print(ref.acquire('1'));
-  print(ref.acquire('1'));
-  print(ref.acquire('1'));
-}
