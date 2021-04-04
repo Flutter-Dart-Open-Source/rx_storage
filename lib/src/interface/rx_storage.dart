@@ -22,11 +22,9 @@ abstract class RxStorage<Key extends Object, Options>
 
   /// `Read–modify–write`.
   ///
-  /// Read value by [key], then decode by [decoder], then encode by [encoder]
-  /// and finally save computed value to persistent storage.
-  ///
-  /// Return a [Future] that completes with updated value or an error.
-  Future<T?> executeUpdate<T extends Object>(
+  /// Read value by [key], then decoding by [decoder], then encoding by [encoder]
+  /// and finally saving computed value to persistent storage.
+  Future<void> executeUpdate<T extends Object>(
     Key key,
     Decoder<T?> decoder,
     Encoder<T?> encoder, [

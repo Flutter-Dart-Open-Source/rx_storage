@@ -324,18 +324,17 @@ class RealRxStorage<Key extends Object, Options,
 
   @nonVirtual
   @override
-  Future<T?> executeUpdate<T extends Object>(
+  Future<void> executeUpdate<T extends Object>(
       Key key, Decoder<T?> decoder, Encoder<T?> encoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _enqueueWritingTask<T?>(
+    return _enqueueWritingTask<void>(
       key,
       () async {
         final value =
             await _useStorage((s) => s.read<T>(key, decoder, options));
-        await _useStorage((s) => s.write<T>(key, value, decoder, options));
-        return value;
+        await _useStorage((s) => s.write<T>(key, value, encoder, options));
       },
     );
   }
