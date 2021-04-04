@@ -38,7 +38,7 @@ class AsyncQueue<T> {
         .shareValue();
     count$
         .where((count) => count == 0)
-        .switchMap((_) => Rx.timer(null, const Duration(seconds: 1))
+        .switchMap((_) => Rx.timer<void>(null, const Duration(seconds: 1))
             .where((_) => count$.value == 0))
         .listen((_) => onTimeout(this))
         .disposedBy(_bag);
@@ -64,6 +64,7 @@ class AsyncQueue<T> {
         _countS.add(-1);
       });
     }
+
     _blockS.stream
         .asyncMap(executeBlock)
         .listen(null, onError: (Object _) {})
