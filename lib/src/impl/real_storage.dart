@@ -6,7 +6,6 @@ import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../async/async_memoizer.dart';
 import '../async/async_queue.dart';
-import '../async/ref_count_resource.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
 import '../logger/event.dart';
@@ -24,17 +23,9 @@ class RealRxStorage<Key extends Object, Options,
   final _keyValuesSubject =
       PublishSubject<Map<Key, KeyAndValue<Key, Object?>>>();
 
-  final _queues = <Object, AsyncQueue<Object?>>{};
-
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
-  final _writeQueueResources = RefCountResource<Object, AsyncQueue<Object?>>(
-    create: (key) {
-      print('Created for $key');
-      return AsyncQueue();
-    },
-    onRelease: (key, value) => value.dispose(),
-  );
+  final _writeQueueResources = <Object, AsyncQueue<Object?>>{};
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
@@ -118,38 +109,12 @@ class RealRxStorage<Key extends Object, Options,
       _storage?.let(block) ?? _storageFuture.then(block);
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
-    final queue = _writeQueueResources.acquire(key);
+    final queue = _writeQueueResources.putIfAbsent(
+      key,
+      () => AsyncQueue<Object?>(),
+    );
 
-    AsyncQueue<Object?> storeQueue() {
-      final inner = _writeQueueResources.acquire(key);
-
-      final subscription = Rx.timer<void>(null, const Duration(seconds: 30))
-          .listen(null)
-            ..disposedBy(_bag);
-      subscription.onData((_) {
-        _writeQueueResources.release(key, inner);
-
-        if (_bag.isDisposed || _bag.isClearing) {
-          return;
-        }
-
-        _bag.delete(_bag);
-      });
-      return inner;
-    }
-
-    final cacheQueue = _queues[key];
-    if (cacheQueue == null) {
-      _queues[key] = storeQueue();
-    } else if (cacheQueue != queue) {
-      cacheQueue.dispose();
-      _queues[key] = storeQueue();
-    }
-
-    return queue
-        .enqueue(block)
-        .then((value) => value as T)
-        .whenComplete(() => _writeQueueResources.release(key, queue));
+    return queue.enqueue(block).then((value) => value as T);
   }
 
   //
@@ -415,12 +380,13 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
-    return _disposeMemo.runOnce(() {
-      _queues.forEach((key, value) => _writeQueueResources.release(key, value));
-      _queues.clear();
-      _writeQueueResources.releaseAll();
-      return _bag.dispose();
-    }).then((_) => _onDispose?.call());
+    return _disposeMemo
+        .runOnce(() => _bag
+            .dispose()
+            .then((_) => Future.wait(
+                _writeQueueResources.values.map((q) => q.dispose())))
+            .then((_) => _writeQueueResources.clear()))
+        .then((_) => _onDispose?.call());
   }
 }
 
