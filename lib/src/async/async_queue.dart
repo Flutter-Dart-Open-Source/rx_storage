@@ -28,7 +28,7 @@ class AsyncQueue<T> {
       DisposeBag(const <Object>[], 'AsyncQueue#${shortHash(this)}');
 
   /// Construct [AsyncQueue].
-  AsyncQueue(void Function(AsyncQueue<T>) onTimeout) {
+  AsyncQueue(void Function() onTimeout) {
     _blockS.disposedBy(_bag);
     _countS.disposedBy(_bag);
 
@@ -39,7 +39,7 @@ class AsyncQueue<T> {
         .where((count) => count == 0)
         .switchMap((_) => Rx.timer<void>(null, const Duration(seconds: 1))
             .where((_) => count$.value == 0))
-        .listen((_) => onTimeout(this))
+        .listen((_) => onTimeout())
         .disposedBy(_bag);
 
     Future<T> executeBlock(_AsyncQueueEntry<T> entry) {

@@ -110,15 +110,14 @@ class RealRxStorage<Key extends Object, Options,
       _storage?.let(block) ?? _storageFuture.then(block);
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
-    final queue = _writeQueueResources.putIfAbsent(
-      key,
-      () => AsyncQueue<Object?>((self) {
-        _writeQueueResources.remove(key);
-        self.dispose();
-      }),
-    );
-
-    return queue.enqueue(block).then((value) => value as T);
+    return _writeQueueResources
+        .putIfAbsent(
+          key,
+          () => AsyncQueue<Object?>(
+              () => _writeQueueResources.remove(key)?.dispose()),
+        )
+        .enqueue(block)
+        .then((value) => value as T);
   }
 
   //
