@@ -34,7 +34,6 @@ class AsyncQueue<T> {
 
     final count$ = _countS.stream
         .scan<int>((acc, value, _) => acc! + value, 0)
-        .doOnData((count) => print('>>>>> count=$count'))
         .shareValue();
     count$
         .where((count) => count == 0)

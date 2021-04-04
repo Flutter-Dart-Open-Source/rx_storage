@@ -23,11 +23,11 @@ Future<void> main() async {
 
   final sub = rxStorage
       .getStringStream('String')
-      .listen((v) => print('>>>>>>>>>>>>>>> $v'));
+      .listen((v) => print(">>>>> key 'String': $v"));
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
-  final max = 10;
+  final max = 100;
 
   // wake up
   for (var i = 0; i < max / 2; i++) {
@@ -84,6 +84,12 @@ Future<void> main() async {
   await sub.cancel();
 
   await Future<void>.delayed(const Duration(seconds: 2));
+
+  stopwatch
+    ..reset()
+    ..start();
+  print('>>> Start 3...');
+
   for (var i = 0; i < max; i++) {
     final key = list[i % list.length];
     final value = await rxStorage.get(key);
@@ -91,4 +97,6 @@ Future<void> main() async {
   }
 
   await rxStorage.dispose();
+
+  print('<<< End 3... ${stopwatch.elapsedMilliseconds}');
 }
