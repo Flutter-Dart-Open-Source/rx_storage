@@ -161,22 +161,25 @@ class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   Future<R> useStorageWithHandlers<R>(
     Future<R> Function(S) block,
-    FutureOr<void> Function(R, S) onSuccess,
-    FutureOr<void> Function(RxStorageError, S) onFailure,
+    FutureOr<void> Function(R, S)? onSuccess,
+    FutureOr<void> Function(RxStorageError, S)? onFailure,
   ) async {
     assert(_debugAssertNotDisposed());
 
     final storage = _storage ?? await _storageFuture;
+    if (onSuccess == null && onFailure == null) {
+      return await block(storage);
+    }
 
     try {
       final value = await block(storage);
-      final futureOrVoid = onSuccess(value, storage);
+      final futureOrVoid = onSuccess?.call(value, storage);
       if (futureOrVoid is Future<void>) {
         await futureOrVoid;
       }
       return value;
     } catch (e, s) {
-      final futureOrVoid = onFailure(RxStorageError(e, s), storage);
+      final futureOrVoid = onFailure?.call(RxStorageError(e, s), storage);
       if (futureOrVoid is Future<void>) {
         await futureOrVoid;
       }
@@ -211,13 +214,14 @@ class RealRxStorage<Key extends Object, Options,
   /// Enqueue writing task to a [AsyncQueue].
   @protected
   @nonVirtual
-  Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
-      _enqueueWritingTask(this, block);
+  Future<T> enqueueWritingTask<T>(Key? key, AsyncQueueBlock<T> block) =>
+      _enqueueWritingTask(key ?? this, block);
 
   //
   // Get and set methods (implements [Storage])
   //
 
+  @nonVirtual
   @override
   Future<bool> containsKey(Key key, [Options? options]) async {
     assert(_debugAssertNotDisposed());
@@ -225,6 +229,7 @@ class RealRxStorage<Key extends Object, Options,
     return await _useStorage((s) => s.containsKey(key, options));
   }
 
+  @nonVirtual
   @override
   Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
@@ -246,6 +251,7 @@ class RealRxStorage<Key extends Object, Options,
     );
   }
 
+  @nonVirtual
   @override
   Future<Map<Key, Object?>> readAll([Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -266,6 +272,7 @@ class RealRxStorage<Key extends Object, Options,
     );
   }
 
+  @nonVirtual
   @override
   Future<void> clear([Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -291,6 +298,7 @@ class RealRxStorage<Key extends Object, Options,
     });
   }
 
+  @nonVirtual
   @override
   Future<void> remove(Key key, [Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -314,6 +322,7 @@ class RealRxStorage<Key extends Object, Options,
     });
   }
 
+  @nonVirtual
   @override
   Future<void> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
       [Options? options]) {
@@ -345,6 +354,7 @@ class RealRxStorage<Key extends Object, Options,
   // Get streams (implements [RxStorage])
   //
 
+  @nonVirtual
   @override
   Future<void> executeUpdate<T extends Object>(
       Key key, Decoder<T?> decoder, Encoder<T?> encoder,
@@ -361,6 +371,7 @@ class RealRxStorage<Key extends Object, Options,
     );
   }
 
+  @nonVirtual
   @override
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
@@ -386,6 +397,7 @@ class RealRxStorage<Key extends Object, Options,
         : stream;
   }
 
+  @nonVirtual
   @override
   Stream<Map<Key, Object?>> observeAll([Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -397,6 +409,7 @@ class RealRxStorage<Key extends Object, Options,
         .asyncMap((_) => _useStorage((s) => s.readAll(options)));
   }
 
+  @nonVirtual
   @override
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
