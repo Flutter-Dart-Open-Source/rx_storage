@@ -48,7 +48,7 @@ class _Item<T> {
 }
 
 void main() {
-  var ref = RefCountResource<String, int>(create: (i) {
+  final ref = RefCountResource<String, int>(create: (i) {
     print('call $i');
     return 2;
   });

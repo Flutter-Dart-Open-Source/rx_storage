@@ -127,8 +127,6 @@ class FakeStorage implements StringKeyStorage {
 
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage, StringKeyStorage {
-  final _reload = Object();
-
   FakeRxStorage(
     FutureOr<StringKeyStorage> storageOrFuture, [
     FakeLogger? logger,

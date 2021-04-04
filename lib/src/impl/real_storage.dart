@@ -14,9 +14,6 @@ import '../logger/logger.dart';
 import '../model/error.dart';
 import '../model/key_and_value.dart';
 
-// TODO(assert)
-// ignore_for_file: unnecessary_null_comparison
-
 /// Default [RxStorage] implementation.
 class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
@@ -59,7 +56,7 @@ class RealRxStorage<Key extends Object, Options,
     FutureOr<S> storageOrFuture, [
     final Logger<Key, Options>? logger,
     this._onDispose,
-  ]) : assert(storageOrFuture != null) {
+  ]) {
     if (storageOrFuture is Future<S>) {
       _storageFuture = storageOrFuture.then((value) {
         assert(_storage is! RxStorage<Key, Options>);
@@ -168,9 +165,6 @@ class RealRxStorage<Key extends Object, Options,
     FutureOr<void> Function(RxStorageError, S) onFailure,
   ) async {
     assert(_debugAssertNotDisposed());
-    assert(block != null);
-    assert(onSuccess != null);
-    assert(onFailure != null);
 
     final storage = _storage ?? await _storageFuture;
 
@@ -195,7 +189,6 @@ class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
     assert(_debugAssertNotDisposed());
-    assert(map != null);
 
     try {
       _keyValuesSubject.add(map);
@@ -209,7 +202,6 @@ class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void logIfEnabled(LoggerEvent<Key, Options> Function() eventProducer) {
     assert(_debugAssertNotDisposed());
-    assert(eventProducer != null);
 
     if (_isLogEnabled) {
       _publishLog(eventProducer());
@@ -229,7 +221,6 @@ class RealRxStorage<Key extends Object, Options,
   @override
   Future<bool> containsKey(Key key, [Options? options]) async {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
     return await _useStorage((s) => s.containsKey(key, options));
   }
@@ -238,8 +229,6 @@ class RealRxStorage<Key extends Object, Options,
   Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
-    assert(decoder != null);
 
     return useStorageWithHandlers(
       (s) => s.read(key, decoder, options),
@@ -305,7 +294,6 @@ class RealRxStorage<Key extends Object, Options,
   @override
   Future<void> remove(Key key, [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
     return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
@@ -330,8 +318,6 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
-    assert(encoder != null);
 
     return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
@@ -364,9 +350,6 @@ class RealRxStorage<Key extends Object, Options,
       Key key, Decoder<T?> decoder, Encoder<T?> encoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
-    assert(decoder != null);
-    assert(encoder != null);
 
     return _enqueueWritingTask<void>(
       key,
@@ -382,7 +365,6 @@ class RealRxStorage<Key extends Object, Options,
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
     FutureOr<T?> convert(KeyAndValue<Object, Object?> entry) =>
         identical(entry, _initialKeyValue)
