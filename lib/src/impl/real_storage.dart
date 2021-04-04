@@ -27,6 +27,8 @@ class RealRxStorage<Key extends Object, Options,
   final _keyValuesSubject =
       PublishSubject<Map<Key, KeyAndValue<Key, Object?>>>();
 
+  final _queues = <Object, AsyncQueue<Object?>>{};
+
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
   final _writeQueueResources = RefCountResource<Object, AsyncQueue<Object?>>(
@@ -120,25 +122,37 @@ class RealRxStorage<Key extends Object, Options,
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
     final queue = _writeQueueResources.acquire(key);
-    return queue.enqueue(block).then((value) => value as T).whenComplete(() {
-      final sub = Rx.timer(null, const Duration(seconds: 2)).listen(null)
-        ..disposedBy(_bag);
 
-      sub.onData((_) {
-        try {
-          _writeQueueResources.release(key, queue);
-        } on StateError catch (e) {
-          print('[RELEASE] $e');
+    AsyncQueue<Object?> storeQueue() {
+      final inner = _writeQueueResources.acquire(key);
+
+      final subscription = Rx.timer<void>(null, const Duration(seconds: 30))
+          .listen(null)
+            ..disposedBy(_bag);
+      subscription.onData((_) {
+        _writeQueueResources.release(key, inner);
+
+        if (_bag.isDisposed || _bag.isClearing) {
+          return;
         }
-        try {
-          _bag.remove(sub);
-        } on DisposedException catch (e) {
-          print('[RELEASE] $e');
-        } on ClearingException catch (e) {
-          print('[RELEASE] $e');
-        }
+
+        _bag.delete(_bag);
       });
-    });
+      return inner;
+    }
+
+    final cacheQueue = _queues[key];
+    if (cacheQueue == null) {
+      _queues[key] = storeQueue();
+    } else if (cacheQueue != queue) {
+      cacheQueue.dispose();
+      _queues[key] = storeQueue();
+    }
+
+    return queue
+        .enqueue(block)
+        .then((value) => value as T)
+        .whenComplete(() => _writeQueueResources.release(key, queue));
   }
 
   //
@@ -406,6 +420,8 @@ class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
 
     return _disposeMemo.runOnce(() {
+      _queues.forEach((key, value) => _writeQueueResources.release(key, value));
+      _queues.clear();
       _writeQueueResources.releaseAll();
       return _bag.dispose();
     }).then((_) => _onDispose?.call());
