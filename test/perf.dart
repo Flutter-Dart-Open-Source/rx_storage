@@ -27,7 +27,7 @@ Future<void> main() async {
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
-  final max = 100000;
+  final max = 10;
 
   // wake up
   for (var i = 0; i < max / 2; i++) {
@@ -39,12 +39,14 @@ Future<void> main() async {
     ..start();
   print('>>> Start 1...');
 
+  final fs = <Future<void>>[];
   for (var i = 0; i < max; i++) {
     final key = list[i % list.length];
     final value = await rxStorage.get(key);
-    await rxStorage.write(key, value, (i) => i);
+    fs.add(rxStorage.write(key, value, (i) => i));
   }
 
+  await Future.wait(fs);
   stopwatch.stop();
   print('<<< End 1... ${stopwatch.elapsedMilliseconds}');
   print('-------------------------------------------');
@@ -71,10 +73,13 @@ Future<void> main() async {
       completer.complete();
     }
   });
+
+  final fs2 = <Future<void>>[];
   for (var i = 0; i <= max; i++) {
-    await rxStorage.setString('key', i.toString());
+    fs2.add(rxStorage.setString('key', i.toString()));
   }
 
+  await Future.wait(fs2);
   await completer.future;
   await sub.cancel();
 

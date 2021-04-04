@@ -94,9 +94,9 @@ class FakeStorage implements StringKeyStorage {
 
   @override
   Future<void> write<T extends Object>(
-          String key, T? value, Encoder<T?> encoder,
-          [void _]) =>
-      _setValue(key, encoder(value));
+          String key, T? value, Encoder<T?> encoder, [void _]) =>
+      Future<void>.delayed(const Duration(milliseconds: 100))
+          .then((_) => _setValue(key, encoder(value)));
 
   @override
   Future<Map<String, Object?>> reload() {

@@ -12,6 +12,7 @@ import '../logger/event.dart';
 import '../logger/logger.dart';
 import '../model/error.dart';
 import '../model/key_and_value.dart';
+import '../util.dart';
 
 /// Default [RxStorage] implementation.
 class RealRxStorage<Key extends Object, Options,
@@ -29,7 +30,7 @@ class RealRxStorage<Key extends Object, Options,
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
-      DisposeBag(const <Object>[], 'RealRxStorage#${_shortHash(this)}');
+      DisposeBag(const <Object>[], 'RealRxStorage#${shortHash(this)}');
 
   /// Logger controller. Nullable
   StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
@@ -111,7 +112,10 @@ class RealRxStorage<Key extends Object, Options,
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
     final queue = _writeQueueResources.putIfAbsent(
       key,
-      () => AsyncQueue<Object?>(),
+      () => AsyncQueue<Object?>((self) {
+        _writeQueueResources.remove(key);
+        self.dispose();
+      }),
     );
 
     return queue.enqueue(block).then((value) => value as T);
@@ -397,8 +401,3 @@ extension _ScopeFunctionExtension<T> on T {
   @pragma('dart2js:tryInline')
   R let<R>(R Function(T) block) => block(this);
 }
-
-/// Returns a 5 character long hexadecimal string generated from
-/// [Object.hashCode]'s 20 least-significant bits.
-String _shortHash(Object? object) =>
-    object.hashCode.toUnsigned(20).toRadixString(16).padLeft(5, '0');
