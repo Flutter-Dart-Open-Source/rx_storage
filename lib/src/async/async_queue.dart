@@ -59,9 +59,7 @@ class AsyncQueue<T> {
       }).onError<Object>((e, s) {
         completer.completeError(e, s);
         throw e;
-      }).whenComplete(() {
-        _countS.add(-1);
-      });
+      }).whenComplete(() => _countS.add(-1));
     }
 
     _blockS.stream
