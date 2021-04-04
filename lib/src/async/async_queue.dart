@@ -38,7 +38,8 @@ class AsyncQueue<T> {
     count$
         .where((count) => count == 0)
         .switchMap((_) => Rx.timer<void>(null, const Duration(seconds: 1))
-            .where((_) => count$.value == 0))
+            .where((_) => count$.value == 0)
+            .takeUntil(count$.where((count) => count > 0)))
         .listen((_) => onTimeout())
         .disposedBy(_bag);
 
