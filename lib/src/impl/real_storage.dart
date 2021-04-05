@@ -120,6 +120,32 @@ class RealRxStorage<Key extends Object, Options,
         .then((value) => value as T);
   }
 
+  Future<void> _writeWithoutSynchronization<T extends Object>(
+    Key key,
+    T? value,
+    Encoder<T?> encoder,
+    Options? options,
+  ) {
+    return useStorageWithHandlers(
+      (s) => s.write<T>(key, value, encoder, options),
+      (_, __) {
+        final keyAndValue = KeyAndValue(key, value, T);
+
+        sendChange({key: keyAndValue});
+
+        if (_isLogEnabled) {
+          _publishLog(WriteSuccessEvent(keyAndValue, options));
+        }
+      },
+      (error, __) {
+        if (_isLogEnabled) {
+          _publishLog(
+              WriteFailureEvent(KeyAndValue(key, value, T), options, error));
+        }
+      },
+    );
+  }
+
   //
   // Protected
   //
@@ -296,26 +322,8 @@ class RealRxStorage<Key extends Object, Options,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _enqueueWritingTask(key, () {
-      return useStorageWithHandlers(
-        (s) => s.write(key, value, encoder, options),
-        (_, __) {
-          final keyAndValue = KeyAndValue(key, value, T);
-
-          sendChange({key: keyAndValue});
-
-          if (_isLogEnabled) {
-            _publishLog(WriteSuccessEvent(keyAndValue, options));
-          }
-        },
-        (error, __) {
-          if (_isLogEnabled) {
-            _publishLog(
-                WriteFailureEvent(KeyAndValue(key, value, T), options, error));
-          }
-        },
-      );
-    });
+    return _enqueueWritingTask(key,
+        () => _writeWithoutSynchronization<T>(key, value, encoder, options));
   }
 
   //
@@ -334,7 +342,7 @@ class RealRxStorage<Key extends Object, Options,
       () async {
         final value =
             await _useStorage((s) => s.read<T>(key, decoder, options));
-        await _useStorage((s) => s.write<T>(key, value, encoder, options));
+        await _writeWithoutSynchronization(key, value, encoder, options);
       },
     );
   }
