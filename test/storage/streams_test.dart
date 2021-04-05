@@ -365,5 +365,61 @@ void main() {
       stream.listen(null);
       expect(() => stream.listen(null), throwsStateError);
     });
+
+    test('executeUpdate', () async {
+      expect(
+        await rxStorage.getString('String'),
+        kTestValues['String'],
+      );
+      await rxStorage.executeUpdate<String>(
+        'String',
+        (s) => s as String?, // read
+        (s) => 'Transformed $s', // write
+      );
+      expect(
+        await rxStorage.getString('String'),
+        'Transformed ${kTestValues['String']}',
+      );
+
+      expect(
+        await rxStorage.readUser(),
+        user1,
+      );
+      await rxStorage.executeUpdate<User>(
+        'User',
+        jsonStringToUser, // read
+        (user) => user == null
+            ? null
+            : userToJsonString(
+                user.withName('Transformed ${user.name}')), // write
+      );
+      expect(
+        await rxStorage.readUser(),
+        user1.withName('Transformed ${user1.name}'),
+      );
+
+      // forward error.
+      fakeStorage.throws = true;
+
+      expect(
+        rxStorage.executeUpdate<String>(
+          'String',
+          (s) => s as String?, // read
+          (s) => 'Transformed $s', // write
+        ),
+        throwsException,
+      );
+      expect(
+        rxStorage.executeUpdate<User>(
+          'User',
+          jsonStringToUser, // read
+          (user) => user == null
+              ? null
+              : userToJsonString(
+                  user.withName('Transformed ${user.name}')), // write
+        ),
+        throwsException,
+      );
+    });
   });
 }

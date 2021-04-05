@@ -12,9 +12,7 @@ import '../logger/event.dart';
 import '../logger/logger.dart';
 import '../model/error.dart';
 import '../model/key_and_value.dart';
-
-// TODO(assert)
-// ignore_for_file: unnecessary_null_comparison
+import '../util.dart';
 
 /// Default [RxStorage] implementation.
 class RealRxStorage<Key extends Object, Options,
@@ -28,11 +26,11 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
-  final _writeQueue = AsyncQueue<Object?>();
+  final _writeQueueResources = <Object, AsyncQueue<Object?>>{};
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
-      DisposeBag(const <Object>[], 'RealRxStorage#${_shortHash(this)}');
+      DisposeBag(const <Object>[], 'RealRxStorage#${shortHash(this)}');
 
   /// Logger controller. Nullable
   StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
@@ -50,7 +48,7 @@ class RealRxStorage<Key extends Object, Options,
     FutureOr<S> storageOrFuture, [
     final Logger<Key, Options>? logger,
     this._onDispose,
-  ]) : assert(storageOrFuture != null) {
+  ]) {
     if (storageOrFuture is Future<S>) {
       _storageFuture = storageOrFuture.then((value) {
         assert(_storage is! RxStorage<Key, Options>);
@@ -111,32 +109,45 @@ class RealRxStorage<Key extends Object, Options,
   Future<R> _useStorage<R>(Future<R> Function(S) block) =>
       _storage?.let(block) ?? _storageFuture.then(block);
 
+  Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
+    return _writeQueueResources
+        .putIfAbsent(
+          key,
+          () => AsyncQueue<Object?>(
+              () => _writeQueueResources.remove(key)?.dispose()),
+        )
+        .enqueue(block)
+        .then((value) => value as T);
+  }
+
   //
   // Protected
   //
 
   /// Calling [block] with [S] as argument.
+  @protected
+  @nonVirtual
   Future<R> useStorageWithHandlers<R>(
     Future<R> Function(S) block,
-    FutureOr<void> Function(R, S) onSuccess,
-    FutureOr<void> Function(RxStorageError, S) onFailure,
+    FutureOr<void> Function(R, S)? onSuccess,
+    FutureOr<void> Function(RxStorageError, S)? onFailure,
   ) async {
     assert(_debugAssertNotDisposed());
-    assert(block != null);
-    assert(onSuccess != null);
-    assert(onFailure != null);
 
     final storage = _storage ?? await _storageFuture;
+    if (onSuccess == null && onFailure == null) {
+      return await block(storage);
+    }
 
     try {
       final value = await block(storage);
-      final futureOrVoid = onSuccess(value, storage);
+      final futureOrVoid = onSuccess?.call(value, storage);
       if (futureOrVoid is Future<void>) {
         await futureOrVoid;
       }
       return value;
     } catch (e, s) {
-      final futureOrVoid = onFailure(RxStorageError(e, s), storage);
+      final futureOrVoid = onFailure?.call(RxStorageError(e, s), storage);
       if (futureOrVoid is Future<void>) {
         await futureOrVoid;
       }
@@ -146,9 +157,9 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Add changed map to subject to trigger.
   @protected
+  @nonVirtual
   void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
     assert(_debugAssertNotDisposed());
-    assert(map != null);
 
     try {
       _keyValuesSubject.add(map);
@@ -159,38 +170,38 @@ class RealRxStorage<Key extends Object, Options,
 
   /// Log event if logging is enabled.
   @protected
-  void logIfEnabled(LoggerEvent<Key, Options> event) {
+  @nonVirtual
+  void logIfEnabled(LoggerEvent<Key, Options> Function() eventProducer) {
     assert(_debugAssertNotDisposed());
-    assert(event != null);
 
     if (_isLogEnabled) {
-      _publishLog(event);
+      _publishLog(eventProducer());
     }
   }
 
   /// Enqueue writing task to a [AsyncQueue].
   @protected
-  Future<T> enqueueWritingTask<T>(AsyncQueueBlock<T> block) =>
-      _writeQueue.enqueue(block).then((value) => value as T);
+  @nonVirtual
+  Future<T> enqueueWritingTask<T>(Key? key, AsyncQueueBlock<T> block) =>
+      _enqueueWritingTask(key ?? this, block);
 
   //
   // Get and set methods (implements [Storage])
   //
 
+  @nonVirtual
   @override
   Future<bool> containsKey(Key key, [Options? options]) async {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
     return await _useStorage((s) => s.containsKey(key, options));
   }
 
+  @nonVirtual
   @override
   Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
-    assert(decoder != null);
 
     return useStorageWithHandlers(
       (s) => s.read(key, decoder, options),
@@ -208,6 +219,7 @@ class RealRxStorage<Key extends Object, Options,
     );
   }
 
+  @nonVirtual
   @override
   Future<Map<Key, Object?>> readAll([Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -228,11 +240,12 @@ class RealRxStorage<Key extends Object, Options,
     );
   }
 
+  @nonVirtual
   @override
   Future<void> clear([Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return enqueueWritingTask(() async {
+    return _enqueueWritingTask(this, () async {
       final keys = (await _useStorage((s) => s.readAll(options))).keys;
 
       return await useStorageWithHandlers(
@@ -253,12 +266,12 @@ class RealRxStorage<Key extends Object, Options,
     });
   }
 
+  @nonVirtual
   @override
   Future<void> remove(Key key, [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
-    return enqueueWritingTask(() {
+    return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
         (s) => s.remove(key, options),
         (_, __) {
@@ -277,14 +290,13 @@ class RealRxStorage<Key extends Object, Options,
     });
   }
 
+  @nonVirtual
   @override
   Future<void> write<T extends Object>(Key key, T? value, Encoder<T?> encoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
-    assert(encoder != null);
 
-    return enqueueWritingTask(() {
+    return _enqueueWritingTask(key, () {
       return useStorageWithHandlers(
         (s) => s.write(key, value, encoder, options),
         (_, __) {
@@ -310,11 +322,28 @@ class RealRxStorage<Key extends Object, Options,
   // Get streams (implements [RxStorage])
   //
 
+  @nonVirtual
+  @override
+  Future<void> executeUpdate<T extends Object>(
+      Key key, Decoder<T?> decoder, Encoder<T?> encoder,
+      [Options? options]) {
+    assert(_debugAssertNotDisposed());
+
+    return _enqueueWritingTask<void>(
+      key,
+      () async {
+        final value =
+            await _useStorage((s) => s.read<T>(key, decoder, options));
+        await _useStorage((s) => s.write<T>(key, value, encoder, options));
+      },
+    );
+  }
+
+  @nonVirtual
   @override
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
-    assert(key != null);
 
     FutureOr<T?> convert(KeyAndValue<Object, Object?> entry) =>
         identical(entry, _initialKeyValue)
@@ -336,6 +365,7 @@ class RealRxStorage<Key extends Object, Options,
         : stream;
   }
 
+  @nonVirtual
   @override
   Stream<Map<Key, Object?>> observeAll([Options? options]) {
     assert(_debugAssertNotDisposed());
@@ -347,12 +377,17 @@ class RealRxStorage<Key extends Object, Options,
         .asyncMap((_) => _useStorage((s) => s.readAll(options)));
   }
 
+  @nonVirtual
   @override
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
     return _disposeMemo
-        .runOnce(() => _writeQueue.dispose().then((_) => _bag.dispose()))
+        .runOnce(() => _bag
+            .dispose()
+            .then((_) => Future.wait(
+                _writeQueueResources.values.map((q) => q.dispose())))
+            .then((_) => _writeQueueResources.clear()))
         .then((_) => _onDispose?.call());
   }
 }
@@ -364,8 +399,3 @@ extension _ScopeFunctionExtension<T> on T {
   @pragma('dart2js:tryInline')
   R let<R>(R Function(T) block) => block(this);
 }
-
-/// Returns a 5 character long hexadecimal string generated from
-/// [Object.hashCode]'s 20 least-significant bits.
-String _shortHash(Object? object) =>
-    object.hashCode.toUnsigned(20).toRadixString(16).padLeft(5, '0');

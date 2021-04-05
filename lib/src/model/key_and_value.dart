@@ -10,8 +10,7 @@ class KeyAndValue<K extends Object, V> {
   final Type type;
 
   /// Construct a [KeyAndValue] with [key] and [key].
-  // ignore: unnecessary_null_comparison
-  const KeyAndValue(this.key, this.value, this.type) : assert(key != null);
+  const KeyAndValue(this.key, this.value, this.type);
 
   @override
   String toString() => 'KeyAndValue { key: $key, type: $type, value: $value }';

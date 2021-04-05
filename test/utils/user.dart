@@ -22,6 +22,8 @@ class User {
     };
   }
 
+  User withName(String name) => User(id, name);
+
   @override
   String toString() => 'User{id: $id, name: $name}';
 
@@ -38,14 +40,15 @@ class User {
 }
 
 extension RxStoreageExtensionsForUser on RxStorage<String, void> {
-  Future<User?> readUser() => read('User', _toUser);
+  Future<User?> readUser() => read('User', jsonStringToUser);
 
-  Future<void> writeUser(User? user) => write<User>('User', user, _toString);
+  Future<void> writeUser(User? user) =>
+      write<User>('User', user, userToJsonString);
 
-  Stream<User?> observeUser() => observe<User>('User', _toUser);
+  Stream<User?> observeUser() => observe<User>('User', jsonStringToUser);
 }
 
-User? _toUser(Object? s) {
+User? jsonStringToUser(Object? s) {
   if (s == null) {
     return null;
   }
@@ -53,4 +56,4 @@ User? _toUser(Object? s) {
   return User.fromJson(map);
 }
 
-String? _toString(User? u) => u == null ? null : jsonEncode(u);
+String? userToJsonString(User? u) => u == null ? null : jsonEncode(u);

@@ -1,6 +1,10 @@
 import 'dart:async';
 
+import 'package:disposebag/disposebag.dart';
 import 'package:meta/meta.dart';
+import 'package:rxdart_ext/rxdart_ext.dart';
+
+import '../util.dart';
 
 class _AsyncQueueEntry<T> {
   final Completer<T> completer;
@@ -18,12 +22,30 @@ typedef AsyncQueueBlock<T> = Future<T> Function();
 /// Serial queue are often used to synchronize access to a specific value or resource to prevent data races to occur.
 @internal
 class AsyncQueue<T> {
+  static const _timeout = Duration(seconds: 30);
+
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
-  StreamSubscription<T>? _subscription;
+  final _countS = StreamController<int>();
+  late final _bag =
+      DisposeBag(const <Object>[], 'AsyncQueue#${shortHash(this)}');
 
   /// Construct [AsyncQueue].
-  AsyncQueue() {
-    _subscription = _blockS.stream.asyncMap((entry) {
+  AsyncQueue(void Function() onTimeout) {
+    _blockS.disposedBy(_bag);
+    _countS.disposedBy(_bag);
+
+    final count$ = _countS.stream
+        .scan<int?>((acc, value, _) => acc! + value, 0)
+        .shareValueNotReplay(null);
+    count$
+        .where((count) => count == 0)
+        .switchMap((_) => Rx.timer<void>(null, _timeout)
+            .where((_) => count$.value == 0)
+            .takeUntil(count$.where((count) => count != null && count > 0)))
+        .listen((_) => onTimeout())
+        .disposedBy(_bag);
+
+    Future<T> executeBlock(_AsyncQueueEntry<T> entry) {
       final completer = entry.completer;
 
       Future<T> future;
@@ -37,31 +59,30 @@ class AsyncQueue<T> {
       return future.then((v) {
         completer.complete(v);
         return v;
-      }).onError<Object>((Object e, StackTrace s) {
+      }).onError<Object>((e, s) {
         completer.completeError(e, s);
         throw e;
-      });
-    }).listen(null, onError: (Object _) {});
+      }).whenComplete(() => _countS.add(-1));
+    }
+
+    _blockS.stream
+        .asyncMap(executeBlock)
+        .listen(null, onError: (Object _) {})
+        .disposedBy(_bag);
   }
 
   /// Close queue.
-  Future<void> dispose() {
-    if (_subscription == null || _blockS.isClosed) {
-      throw StateError('AsyncQueue has been disposed!');
-    }
-    final future = _subscription!.cancel().then<void>((_) => _blockS.close());
-    _subscription = null;
-    return future;
-  }
+  Future<void> dispose() => _bag.dispose();
 
   /// Add block to queue.
   Future<T> enqueue(AsyncQueueBlock<T> block) {
-    if (_subscription == null || _blockS.isClosed) {
+    if (_bag.isDisposed) {
       throw StateError('AsyncQueue has been disposed!');
     }
 
     final completer = Completer<T>.sync();
     _blockS.add(_AsyncQueueEntry(completer, block));
+    _countS.add(1);
     return completer.future;
   }
 }

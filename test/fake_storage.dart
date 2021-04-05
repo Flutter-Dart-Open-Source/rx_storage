@@ -94,9 +94,9 @@ class FakeStorage implements StringKeyStorage {
 
   @override
   Future<void> write<T extends Object>(
-          String key, T? value, Encoder<T?> encoder,
-          [void _]) =>
-      _setValue(key, encoder(value));
+          String key, T? value, Encoder<T?> encoder, [void _]) =>
+      Future<void>.delayed(const Duration(milliseconds: 10))
+          .then((_) => _setValue(key, encoder(value)));
 
   @override
   Future<Map<String, Object?>> reload() {
@@ -139,18 +139,17 @@ class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
 
   @override
   Future<Map<String, Object?>> reload() {
-    return enqueueWritingTask(() async {
-      final handler = (Object? _, Object? __) => null;
+    return enqueueWritingTask(null, () async {
       final before =
-          await useStorageWithHandlers((s) => s.readAll(), handler, handler);
+          await useStorageWithHandlers((s) => s.readAll(), null, null);
 
       return useStorageWithHandlers(
         (s) => s.reload(),
         (value, _) {
           sendChange(computeMap(before, value));
-          logIfEnabled(ReloadSuccessEvent(value));
+          logIfEnabled(() => ReloadSuccessEvent(value));
         },
-        (error, _) => logIfEnabled(ReloadFailureEvent(error)),
+        (error, _) => logIfEnabled(() => ReloadFailureEvent(error)),
       );
     });
   }

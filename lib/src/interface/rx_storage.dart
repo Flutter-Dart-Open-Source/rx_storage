@@ -20,6 +20,17 @@ abstract class RxStorage<Key extends Object, Options>
         onDispose,
       );
 
+  /// `Read–modify–write`.
+  ///
+  /// Read value by [key], then decode with [decoder], then encode with [encoder]
+  /// and finally save computed value to persistent storage.
+  Future<void> executeUpdate<T extends Object>(
+    Key key,
+    Decoder<T?> decoder,
+    Encoder<T?> encoder, [
+    Options? options,
+  ]);
+
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
