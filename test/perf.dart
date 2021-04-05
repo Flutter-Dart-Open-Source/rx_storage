@@ -55,9 +55,9 @@ Future<void> main() async {
   //
   //
 
-  print('Start waiting 31 seconds to making timeout');
+  print('Start waiting 31 seconds to make a timeout...');
   await Future<void>.delayed(const Duration(seconds: 31));
-  print('Timeout should be occurred!');
+  print('The timeout should be occurred!');
 
   final completer = Completer<void>.sync();
   stopwatch
