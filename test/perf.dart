@@ -27,7 +27,7 @@ Future<void> main() async {
 
   final stopwatch = Stopwatch();
   final list = kTestValues.keys.toList();
-  final max = 100;
+  final max = 500;
 
   // wake up
   for (var i = 0; i < max / 2; i++) {
@@ -55,7 +55,9 @@ Future<void> main() async {
   //
   //
 
-  await Future<void>.delayed(const Duration(seconds: 2));
+  print('Start waiting 31 seconds to making timeout');
+  await Future<void>.delayed(const Duration(seconds: 31));
+  print('Timeout should be occurred!');
 
   final completer = Completer<void>.sync();
   stopwatch

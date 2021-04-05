@@ -22,6 +22,8 @@ typedef AsyncQueueBlock<T> = Future<T> Function();
 /// Serial queue are often used to synchronize access to a specific value or resource to prevent data races to occur.
 @internal
 class AsyncQueue<T> {
+  static const _timeout = Duration(seconds: 30);
+
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
   final _countS = StreamController<int>();
   late final _bag =
@@ -33,13 +35,13 @@ class AsyncQueue<T> {
     _countS.disposedBy(_bag);
 
     final count$ = _countS.stream
-        .scan<int>((acc, value, _) => acc! + value, 0)
-        .shareValue();
+        .scan<int?>((acc, value, _) => acc! + value, 0)
+        .shareValueNotReplay(null);
     count$
         .where((count) => count == 0)
-        .switchMap((_) => Rx.timer<void>(null, const Duration(seconds: 1))
+        .switchMap((_) => Rx.timer<void>(null, _timeout)
             .where((_) => count$.value == 0)
-            .takeUntil(count$.where((count) => count > 0)))
+            .takeUntil(count$.where((count) => count != null && count > 0)))
         .listen((_) => onTimeout())
         .disposedBy(_bag);
 
