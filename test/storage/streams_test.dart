@@ -374,7 +374,8 @@ void main() {
       await rxStorage.executeUpdate<String>(
         'String',
         (s) => s as String?, // read
-        (s) => 'Transformed $s', // write
+        (s) => 'Transformed $s', // modify,
+        (s) => s, // write
       );
       expect(
         await rxStorage.getString('String'),
@@ -388,10 +389,10 @@ void main() {
       await rxStorage.executeUpdate<User>(
         'User',
         jsonStringToUser, // read
-        (user) => user == null
-            ? null
-            : userToJsonString(
-                user.withName('Transformed ${user.name}')), // write
+        (user) =>
+            user != null ? user.withName('Transformed ${user.name}') : null,
+        // modify
+        userToJsonString, // write
       );
       expect(
         await rxStorage.readUser(),
@@ -405,7 +406,8 @@ void main() {
         rxStorage.executeUpdate<String>(
           'String',
           (s) => s as String?, // read
-          (s) => 'Transformed $s', // write
+          (s) => 'Transformed $s', // modify,
+          (s) => s, // write
         ),
         throwsException,
       );
@@ -413,10 +415,10 @@ void main() {
         rxStorage.executeUpdate<User>(
           'User',
           jsonStringToUser, // read
-          (user) => user == null
-              ? null
-              : userToJsonString(
-                  user.withName('Transformed ${user.name}')), // write
+          (user) =>
+              user != null ? user.withName('Transformed ${user.name}') : null,
+          // modify
+          userToJsonString, // write
         ),
         throwsException,
       );
