@@ -367,61 +367,81 @@ void main() {
     });
 
     test('executeUpdate', () async {
-      expect(
-        await rxStorage.getString('String'),
-        kTestValues['String'],
-      );
-      await rxStorage.executeUpdate<String>(
-        'String',
-        (s) => s as String?, // read
-        (s) => 'Transformed $s', // modify,
-        (s) => s, // write
-      );
-      expect(
-        await rxStorage.getString('String'),
-        'Transformed ${kTestValues['String']}',
-      );
+      {
+        final expected = 'Transformed ${kTestValues['String']}';
+        expect(
+          rxStorage.getStringStream('String'),
+          emitsInOrder(<Object>[anything, expected]),
+        );
+        expect(
+          await rxStorage.getString('String'),
+          kTestValues['String'],
+        );
 
-      expect(
-        await rxStorage.readUser(),
-        user1,
-      );
-      await rxStorage.executeUpdate<User>(
-        'User',
-        jsonStringToUser, // read
-        (user) =>
-            user != null ? user.withName('Transformed ${user.name}') : null,
-        // modify
-        userToJsonString, // write
-      );
-      expect(
-        await rxStorage.readUser(),
-        user1.withName('Transformed ${user1.name}'),
-      );
-
-      // forward error.
-      fakeStorage.throws = true;
-
-      expect(
-        rxStorage.executeUpdate<String>(
+        await rxStorage.executeUpdate<String>(
           'String',
           (s) => s as String?, // read
           (s) => 'Transformed $s', // modify,
           (s) => s, // write
-        ),
-        throwsException,
-      );
-      expect(
-        rxStorage.executeUpdate<User>(
+        );
+
+        expect(
+          await rxStorage.getString('String'),
+          expected,
+        );
+      }
+
+      {
+        final expected = user1.withName('Transformed ${user1.name}');
+        expect(
+          rxStorage.observeUser(),
+          emitsInOrder(<Object>[anything, expected]),
+        );
+        expect(
+          await rxStorage.readUser(),
+          user1,
+        );
+
+        await rxStorage.executeUpdate<User>(
           'User',
           jsonStringToUser, // read
           (user) =>
               user != null ? user.withName('Transformed ${user.name}') : null,
           // modify
           userToJsonString, // write
-        ),
-        throwsException,
-      );
+        );
+
+        expect(
+          await rxStorage.readUser(),
+          expected,
+        );
+      }
+
+      {
+        // forward error.
+        fakeStorage.throws = true;
+
+        expect(
+          rxStorage.executeUpdate<String>(
+            'String',
+            (s) => s as String?, // read
+            (s) => 'Transformed $s', // modify,
+            (s) => s, // write
+          ),
+          throwsException,
+        );
+        expect(
+          rxStorage.executeUpdate<User>(
+            'User',
+            jsonStringToUser, // read
+            (user) =>
+                user != null ? user.withName('Transformed ${user.name}') : null,
+            // modify
+            userToJsonString, // write
+          ),
+          throwsException,
+        );
+      }
     });
   });
 }
