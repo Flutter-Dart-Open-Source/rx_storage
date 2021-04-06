@@ -398,13 +398,12 @@ class RealRxStorage<Key extends Object, Options,
   Future<void> dispose() {
     assert(_debugAssertNotDisposed());
 
-    return _disposeMemo
-        .runOnce(() => _bag
-            .dispose()
-            .then((_) => Future.wait(
-                _writeQueueResources.values.map((q) => q.dispose())))
-            .then((_) => _writeQueueResources.clear()))
-        .then((_) => _onDispose?.call());
+    final doDisposing = () =>
+        Future.wait(_writeQueueResources.values.map((q) => q.dispose()))
+            .then((value) => _writeQueueResources.clear())
+            .then((value) => _bag.dispose());
+
+    return _disposeMemo.runOnce(doDisposing).then((_) => _onDispose?.call());
   }
 }
 
