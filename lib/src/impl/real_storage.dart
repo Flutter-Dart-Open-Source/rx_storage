@@ -346,8 +346,7 @@ class RealRxStorage<Key extends Object, Options,
       key,
       () async {
         // Read
-        final value =
-            await _useStorage((s) => s.read<T>(key, decoder, options));
+        final value = await read<T>(key, decoder, options);
         // Modify
         final transformed = transformer(value);
         // Write
