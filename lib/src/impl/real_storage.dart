@@ -403,8 +403,8 @@ class RealRxStorage<Key extends Object, Options,
             .then((_) => _writeQueueResources.clear())
             .then((_) => _bag.dispose());
     final future = _disposeMemo.runOnce(dispose);
-    return _onDispose?.let((onDispose) => future.then((_) => onDispose()))
-        ?? future;
+    return _onDispose?.let((onDispose) => future.then((_) => onDispose())) ??
+        future;
   }
 }
 
