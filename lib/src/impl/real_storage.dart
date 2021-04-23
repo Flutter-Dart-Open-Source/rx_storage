@@ -30,7 +30,7 @@ class RealRxStorage<Key extends Object, Options,
 
   final _disposeMemo = AsyncMemoizer<void>();
   late final _bag =
-      DisposeBag(const <Object>[], 'RealRxStorage#${shortHash(this)}');
+      DisposeBag(const <Object>[], '( RealRxStorage ~ ${shortHash(this)} )');
 
   /// Logger controller. Nullable
   StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
@@ -114,7 +114,9 @@ class RealRxStorage<Key extends Object, Options,
         .putIfAbsent(
           key,
           () => AsyncQueue<Object?>(
-              () => _writeQueueResources.remove(key)?.dispose()),
+            key,
+            () => _writeQueueResources.remove(key)?.dispose(),
+          ),
         )
         .enqueue(block)
         .then((value) => value as T);

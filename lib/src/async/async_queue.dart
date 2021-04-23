@@ -26,11 +26,13 @@ class AsyncQueue<T> {
 
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
   final _countS = StreamController<int>();
-  late final _bag =
-      DisposeBag(const <Object>[], 'AsyncQueue#${shortHash(this)}');
+  late final DisposeBag _bag;
 
   /// Construct [AsyncQueue].
-  AsyncQueue(void Function() onTimeout) {
+  AsyncQueue(Object key, void Function() onTimeout) {
+    _bag = DisposeBag(
+        const <Object>[], '( AsyncQueue ~ $key ~ ${shortHash(this)} )');
+
     _blockS.disposedBy(_bag);
     _countS.disposedBy(_bag);
 
