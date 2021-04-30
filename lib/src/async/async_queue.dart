@@ -25,7 +25,7 @@ class AsyncQueue<T> {
   static const _timeout = Duration(seconds: 30);
 
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
-  final _countS = StreamController<int>();
+  final _countS = StreamController<int>(sync: true);
   late final DisposeBag _bag;
 
   /// Construct [AsyncQueue].
