@@ -87,16 +87,12 @@ class RealRxStorage<Key extends Object, Options,
   void _publishLog(LoggerEvent<Key, Options> event) {
     assert(_debugAssertNotDisposed());
 
-    try {
-      _loggerEventController!.add(event);
-    } on StateError {
-      assert(_debugAssertNotDisposed());
-    }
+    _loggerEventController!.add(event);
   }
 
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_bag.isDisposed && _disposeMemo.hasRun) {
+      if (_bag.isClearing || _bag.isDisposed) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }

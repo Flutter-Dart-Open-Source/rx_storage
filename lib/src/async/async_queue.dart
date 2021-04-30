@@ -78,9 +78,12 @@ class AsyncQueue<T> {
 
   /// Add block to queue.
   Future<T> enqueue(AsyncQueueBlock<T> block) {
-    if (_bag.isDisposed) {
-      throw StateError('AsyncQueue has been disposed!');
-    }
+    assert(() {
+      if (_bag.isClearing || _bag.isDisposed) {
+        throw StateError('AsyncQueue has been disposed!');
+      }
+      return true;
+    }());
 
     final completer = Completer<T>.sync();
     _blockS.add(_AsyncQueueEntry(completer, block));
