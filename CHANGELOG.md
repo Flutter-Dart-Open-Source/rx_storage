@@ -1,3 +1,10 @@
+## 1.0.0 - Apr 30, 2021
+
+-   Stable release for null safety.
+-   Add `RxStorage.executeUpdate`: Read–modify–write style.
+-   Synchronize writing task by key.
+-   Internal refactoring, optimize performance.
+
 ## 1.0.0-nullsafety.0 - Feb 24, 2021
 
 -   **Breaking**:
