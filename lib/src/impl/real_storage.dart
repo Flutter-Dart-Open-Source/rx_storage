@@ -374,8 +374,8 @@ class RealRxStorage<Key extends Object, Options,
         ? stream
             .doOnData((value) =>
                 _publishLog(OnDataStreamEvent(KeyAndValue(key, value, T))))
-            .doOnError((e, s) => _publishLog(
-                OnErrorStreamEvent(RxStorageError(e, s ?? StackTrace.empty))))
+            .doOnError(
+                (e, s) => _publishLog(OnErrorStreamEvent(RxStorageError(e, s))))
         : stream;
   }
 
