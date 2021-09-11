@@ -405,8 +405,7 @@ void main() {
         await rxStorage.executeUpdate<User>(
           'User',
           jsonStringToUser, // read
-          (user) =>
-              user != null ? user.withName('Transformed ${user.name}') : null,
+          (user) => user?.withName('Transformed ${user.name}'),
           // modify
           userToJsonString, // write
         );
@@ -434,8 +433,7 @@ void main() {
           rxStorage.executeUpdate<User>(
             'User',
             jsonStringToUser, // read
-            (user) =>
-                user != null ? user.withName('Transformed ${user.name}') : null,
+            (user) => user?.withName('Transformed ${user.name}'),
             // modify
             userToJsonString, // write
           ),

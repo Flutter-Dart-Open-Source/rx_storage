@@ -20,7 +20,6 @@ void main() {
           '    → { key: key2, type: int, value: 2 }\n',
         ].join('\n')),
       );
-      ;
     });
 
     test('OnDataStreamEvent', () {
