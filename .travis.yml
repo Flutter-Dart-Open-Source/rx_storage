@@ -3,7 +3,7 @@ dart:
   - stable
 script:
   - dart analyze --fatal-infos --fatal-warnings
-  - dartfmt -n ./lib --set-exit-if-changed
+  - dart format . --set-exit-if-changed
   - pub get
   - pub global activate coverage
   - pub run test test/rx_storage_test.dart
