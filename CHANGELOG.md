@@ -1,3 +1,12 @@
+## 1.2.0 - Sep 11, 2021
+
+- Update dependencies
+    - `rxdart` to `0.27.2`
+    - `rxdart_ext` to `0.1.2`
+    - `meta` to `1.7.0`
+
+- Internal: migrated from `pedantic` to `lints`.
+
 ## 1.1.0 - May 9, 2021
 
 -   Update `rxdart` to `0.27.0`.
