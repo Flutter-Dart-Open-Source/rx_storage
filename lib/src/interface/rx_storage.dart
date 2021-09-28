@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import '../../rx_storage.dart';
 import '../impl/real_storage.dart';
 import '../logger/logger.dart';
 import 'storage.dart';
