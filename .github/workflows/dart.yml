@@ -3,26 +3,30 @@ name: Dart CI
 on:
   push:
     branches: [ master ]
+    paths-ignore: [ '**.md' ]
   pull_request:
     branches: [ master ]
+    paths-ignore: [ '**.md' ]
   schedule:
-    # Runs at 02:00 UTC on the 1, 4, 7, 10, 13, 16, 19, 22, 25, 28 and 31st of every month.
+      # Runs at 02:00 UTC on the 1, 4, 7, 10, 13, 16, 19, 22, 25, 28 and 31st of every month.
     - cron: "0 2 */3 * *"
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    
     strategy:
       matrix:
-        container: [ 'google/dart:latest', 'google/dart:dev' ]
-
-    container:
-      image: ${{ matrix.container }}
+        sdk: [ stable, beta, dev, 2.12.0 ]
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1.3
+        with:
+          sdk: ${{ matrix.sdk }}
 
       - name: Print Dart version
         run: dart --version
@@ -31,9 +35,11 @@ jobs:
         run: pub get
 
       - name: Analyze
+        if: ${{ matrix.sdk == 'stable' }}
         run: dart analyze --fatal-infos --fatal-warnings
 
       - name: Format code
+        if: ${{ matrix.sdk == 'stable' }}
         run: dart format . --set-exit-if-changed
 
       - name: Active coverage
