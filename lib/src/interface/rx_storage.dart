@@ -15,7 +15,7 @@ abstract class RxStorage<Key extends Object, Options>
   /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(
     FutureOr<Storage<Key, Options>> storageOrFuture, [
-    Logger<Key, Options>? logger,
+    RxStorageLogger<Key, Options>? logger,
     void Function()? onDispose,
   ]) =>
       RealRxStorage<Key, Options, Storage<Key, Options>>(

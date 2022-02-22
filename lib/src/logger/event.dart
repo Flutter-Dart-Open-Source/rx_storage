@@ -5,7 +5,7 @@ import '../model/key_and_value.dart';
 
 /// Event when reading, writing storage.
 @immutable
-abstract class LoggerEvent<Key extends Object, Options> {}
+abstract class RxStorageLoggerEvent<Key extends Object, Options> {}
 
 //
 // BEGIN: STREAM
@@ -13,7 +13,7 @@ abstract class LoggerEvent<Key extends Object, Options> {}
 
 /// Key changed when mutating storage.
 class KeysChangedEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// A list containing all changed values associated with keys.
   final List<KeyAndValue<Key, Object?>> keyAndValues;
 
@@ -23,7 +23,7 @@ class KeysChangedEvent<Key extends Object, Options>
 
 /// Stream emits new data event.
 class OnDataStreamEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// Changed value with key.
   final KeyAndValue<Key, Object?> keyAndValue;
 
@@ -33,7 +33,7 @@ class OnDataStreamEvent<Key extends Object, Options>
 
 /// Stream emits error event.
 class OnErrorStreamEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// Error from upstream (eg. cast error, ...)
   final RxStorageError error;
 
@@ -51,7 +51,7 @@ class OnErrorStreamEvent<Key extends Object, Options>
 
 /// Read value successfully.
 class ReadValueSuccessEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// Read value with key.
   final KeyAndValue<Key, Object?> keyAndValue;
 
@@ -64,7 +64,7 @@ class ReadValueSuccessEvent<Key extends Object, Options>
 
 /// Read value failed.
 class ReadValueFailureEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The key.
   final Key key;
 
@@ -83,7 +83,7 @@ class ReadValueFailureEvent<Key extends Object, Options>
 
 /// Read all values successfully.
 class ReadAllSuccessEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// All values read from storage.
   final List<KeyAndValue<Key, Object?>> all;
 
@@ -96,7 +96,7 @@ class ReadAllSuccessEvent<Key extends Object, Options>
 
 /// Read all values failed.
 class ReadAllFailureEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The error occurred when reading.
   final RxStorageError error;
 
@@ -117,7 +117,7 @@ class ReadAllFailureEvent<Key extends Object, Options>
 
 /// Clear storage successfully.
 class ClearSuccessEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The options.
   final Options? options;
 
@@ -127,7 +127,7 @@ class ClearSuccessEvent<Key extends Object, Options>
 
 /// Clear storage failed.
 class ClearFailureEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The error occurred while clearing.
   final RxStorageError error;
 
@@ -140,7 +140,7 @@ class ClearFailureEvent<Key extends Object, Options>
 
 /// Remove successfully.
 class RemoveSuccessEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The key.
   final Key key;
 
@@ -153,7 +153,7 @@ class RemoveSuccessEvent<Key extends Object, Options>
 
 /// Remove failed.
 class RemoveFailureEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The key.
   final Key key;
 
@@ -169,7 +169,7 @@ class RemoveFailureEvent<Key extends Object, Options>
 
 /// Write successfully.
 class WriteSuccessEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The key and value.
   final KeyAndValue<Key, Object?> keyAndValue;
 
@@ -182,7 +182,7 @@ class WriteSuccessEvent<Key extends Object, Options>
 
 /// Write failed.
 class WriteFailureEvent<Key extends Object, Options>
-    implements LoggerEvent<Key, Options> {
+    implements RxStorageLoggerEvent<Key, Options> {
   /// The key and value.
   final KeyAndValue<Key, Object?> keyAndValue;
 

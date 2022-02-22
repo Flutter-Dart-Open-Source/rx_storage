@@ -11,35 +11,35 @@ abstract class StringKeyStorage extends Storage<String, void> {
 abstract class StringKeyRxStorage extends StringKeyStorage
     implements RxStorage<String, void> {}
 
-abstract class FakeLogger extends Logger<String, void> {}
+abstract class FakeLogger extends RxStorageLogger<String, void> {}
 
-class FakeDefaultLogger extends DefaultLogger<String, void>
+class FakeDefaultLogger extends RxStorageDefaultLogger<String, void>
     implements FakeLogger {
   const FakeDefaultLogger();
 
   @override
-  void logOther(LoggerEvent<String, void> event) {
+  bool handleLogEvent(RxStorageLoggerEvent<String, void> event) {
     if (event is ReloadSuccessEvent) {
       print(
-          '$tag ${DefaultLogger.rightArrow} ReloadSuccessEvent ${DefaultLogger.rightArrow} ${event.map}');
-      return;
+          '$tag ${RxStorageDefaultLogger.rightArrow} ReloadSuccessEvent ${RxStorageDefaultLogger.rightArrow} ${event.map}');
+      return true;
     }
     if (event is ReloadFailureEvent) {
       print(
-          '$tag ${DefaultLogger.rightArrow} ReloadFailureEvent ${DefaultLogger.rightArrow} ${event.error}');
-      return;
+          '$tag ${RxStorageDefaultLogger.rightArrow} ReloadFailureEvent ${RxStorageDefaultLogger.rightArrow} ${event.error}');
+      return true;
     }
-    super.logOther(event);
+    return false;
   }
 }
 
-class ReloadSuccessEvent implements LoggerEvent<String, void> {
+class ReloadSuccessEvent implements RxStorageLoggerEvent<String, void> {
   final Map<String, Object?> map;
 
   ReloadSuccessEvent(this.map);
 }
 
-class ReloadFailureEvent implements LoggerEvent<String, void> {
+class ReloadFailureEvent implements RxStorageLoggerEvent<String, void> {
   final RxStorageError error;
 
   ReloadFailureEvent(this.error);
