@@ -9,8 +9,8 @@ import 'logger.dart';
 // ignore_for_file: public_member_api_docs
 
 /// Default Logger's implementation, simply print to the console.
-class DefaultLogger<Key extends Object, Options>
-    implements Logger<Key, Options> {
+class RxStorageDefaultLogger<Key extends Object, Options>
+    implements RxStorageLogger<Key, Options> {
   //
   // some unicode characters
   // and constants.
@@ -31,8 +31,9 @@ class DefaultLogger<Key extends Object, Options>
   /// If [trimValueOutput] is true, value text will be trimmed to max [maxValueTextLength] characters.
   final bool trimValueOutput;
 
-  /// Construct a [DefaultLogger].
-  const DefaultLogger({this.tag = defaultTag, this.trimValueOutput = false});
+  /// Construct a [RxStorageDefaultLogger].
+  const RxStorageDefaultLogger(
+      {this.tag = defaultTag, this.trimValueOutput = false});
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -62,7 +63,11 @@ class DefaultLogger<Key extends Object, Options>
 
   @nonVirtual
   @override
-  void log(LoggerEvent<Key, Options> event) {
+  void log(RxStorageLoggerEvent<Key, Options> event) {
+    if (handleLogEvent(event)) {
+      return;
+    }
+
     //
     // BEGIN: STREAM
     //
@@ -196,13 +201,13 @@ class DefaultLogger<Key extends Object, Options>
     //
     // END: WRITE
     //
-
-    logOther(event);
   }
 
-  /// Logs other events.
-  void logOther(LoggerEvent<Key, Options> event) =>
-      throw Exception('Unhandled event: $event');
+  /// This method can be overridden to handle custom [RxStorageLoggerEvent] implementations or handle
+  /// the standard events in a different way.
+  ///
+  /// Returns `true` if event was handled, `false` otherwise.
+  bool handleLogEvent(RxStorageLoggerEvent<Key, Options> event) => false;
 }
 
 extension on String {
