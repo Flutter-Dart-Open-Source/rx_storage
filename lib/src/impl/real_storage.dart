@@ -33,7 +33,7 @@ class RealRxStorage<Key extends Object, Options,
       DisposeBag(const <Object>[], '( RealRxStorage ~ ${shortHash(this)} )');
 
   /// Logger controller. Nullable
-  StreamController<LoggerEvent<Key, Options>>? _loggerEventController;
+  StreamController<RxStorageLoggerEvent<Key, Options>>? _loggerEventController;
 
   /// Nullable.
   S? _storage;
@@ -46,7 +46,7 @@ class RealRxStorage<Key extends Object, Options,
   /// Construct a [RealRxStorage].
   RealRxStorage(
     FutureOr<S> storageOrFuture, [
-    final Logger<Key, Options>? logger,
+    final RxStorageLogger<Key, Options>? logger,
     this._onDispose,
   ]) {
     if (storageOrFuture is Future<S>) {
@@ -67,13 +67,13 @@ class RealRxStorage<Key extends Object, Options,
   // Internal
   //
 
-  void _setupLogger(Logger logger) {
+  void _setupLogger(RxStorageLogger logger) {
     _loggerEventController = StreamController(sync: true)
       ..disposedBy(_bag)
       ..stream.listen(logger.log).disposedBy(_bag);
 
     _keyValuesSubject
-        .map<LoggerEvent<Key, Options>>(
+        .map<RxStorageLoggerEvent<Key, Options>>(
             (map) => KeysChangedEvent(map.toListOfKeyAndValues()))
         .listen(_loggerEventController!.add)
         .disposedBy(_bag);
@@ -84,7 +84,7 @@ class RealRxStorage<Key extends Object, Options,
   bool get _isLogEnabled => _loggerEventController != null;
 
   /// Crash if [_loggerEventController] is null.
-  void _publishLog(LoggerEvent<Key, Options> event) {
+  void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
     assert(_debugAssertNotDisposed());
 
     _loggerEventController!.add(event);
@@ -195,7 +195,8 @@ class RealRxStorage<Key extends Object, Options,
   /// Log event if logging is enabled.
   @protected
   @nonVirtual
-  void logIfEnabled(LoggerEvent<Key, Options> Function() eventProducer) {
+  void logIfEnabled(
+      RxStorageLoggerEvent<Key, Options> Function() eventProducer) {
     assert(_debugAssertNotDisposed());
 
     if (_isLogEnabled) {

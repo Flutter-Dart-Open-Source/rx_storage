@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('DefaultLogger<String, void>', () {
-    final logger = DefaultLogger<String, void>(tag: 'TAG');
+    final logger = RxStorageDefaultLogger<String, void>(tag: 'TAG');
 
     test('KeysChangedEvent', () {
       const keyAndValues = [
@@ -163,7 +163,7 @@ void main() {
   });
 
   group('DefaultLogger<String, int>', () {
-    final logger = DefaultLogger<String, int>(tag: 'TAG');
+    final logger = RxStorageDefaultLogger<String, int>(tag: 'TAG');
 
     test('KeysChangedEvent', () {
       const keyAndValues = [
