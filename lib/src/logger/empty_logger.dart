@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import 'event.dart';
 import 'logger.dart';
 
@@ -7,6 +9,7 @@ class RxStorageEmptyLogger<Key extends Object, Options>
   /// Constructs a [RxStorageEmptyLogger].
   const RxStorageEmptyLogger();
 
+  @nonVirtual
   @override
   void log(RxStorageLoggerEvent<Key, Options> event) {}
 }
