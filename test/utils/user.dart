@@ -58,5 +58,4 @@ Future<User?> jsonStringToUser(Object? s) async {
   return User.fromJson(map);
 }
 
-Future<String?> userToJsonString(User? u) async =>
-    u == null ? null : jsonEncode(u);
+String? userToJsonString(User? u) => u == null ? null : jsonEncode(u);
