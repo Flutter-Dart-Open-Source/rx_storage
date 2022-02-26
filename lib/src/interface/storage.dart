@@ -1,10 +1,12 @@
-/// Convert [T] to type that can be persisted in [Storage].
-/// This used in [Storage.write].
-typedef Encoder<T> = Object? Function(T);
+import 'dart:async';
+
+/// Convert [T] to a value of type that can be persisted in [Storage].
+/// This is used in [Storage.write].
+typedef Encoder<T> = FutureOr<Object?> Function(T t);
 
 /// Convert storage persisted type to [T].
-/// This used in [Storage.read].
-typedef Decoder<T> = T Function(Object?);
+/// This is used in [Storage.read].
+typedef Decoder<T> = FutureOr<T> Function(Object? o);
 
 /// A persistent store for simple data. Data is persisted to disk asynchronously.
 abstract class Storage<Key extends Object, Options> {

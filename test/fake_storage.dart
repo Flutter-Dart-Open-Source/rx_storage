@@ -66,6 +66,8 @@ class FakeStorage implements StringKeyStorage {
 
   Future<void> _setValue(String key, Object? value) {
     return _wrapCanThrows(() {
+      assert(value is! Future<dynamic>, 'Actual type is ${value.runtimeType}');
+
       if (value is List<String>?) {
         _map[key] = value?.toList();
       } else {
@@ -96,7 +98,8 @@ class FakeStorage implements StringKeyStorage {
   Future<void> write<T extends Object>(
           String key, T? value, Encoder<T?> encoder, [void _]) =>
       Future<void>.delayed(const Duration(milliseconds: 10))
-          .then((_) => _setValue(key, encoder(value)));
+          .then((_) => encoder(value))
+          .then((encoded) => _setValue(key, encoded));
 
   @override
   Future<Map<String, Object?>> reload() {

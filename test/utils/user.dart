@@ -48,7 +48,9 @@ extension RxStoreageExtensionsForUser on RxStorage<String, void> {
   Stream<User?> observeUser() => observe<User>('User', jsonStringToUser);
 }
 
-User? jsonStringToUser(Object? s) {
+Future<User?> jsonStringToUser(Object? s) async {
+  await Future<void>.delayed(const Duration(milliseconds: 10));
+
   if (s == null) {
     return null;
   }
@@ -56,4 +58,5 @@ User? jsonStringToUser(Object? s) {
   return User.fromJson(map);
 }
 
-String? userToJsonString(User? u) => u == null ? null : jsonEncode(u);
+Future<String?> userToJsonString(User? u) async =>
+    u == null ? null : jsonEncode(u);
