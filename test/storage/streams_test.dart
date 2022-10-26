@@ -33,9 +33,9 @@ void main() {
       );
     });
 
-    tearDown(() {
+    tearDown(() async {
       try {
-        rxStorage.dispose();
+        await rxStorage.dispose();
       } catch (_) {}
     });
 
@@ -379,10 +379,10 @@ void main() {
         );
 
         await rxStorage.executeUpdate<String>(
-          'String',
-          (s) => s as String?, // read
-          (s) => 'Transformed $s', // modify,
-          (s) => s, // write
+          key: 'String',
+          decoder: (s) => s as String?, // read
+          transformer: (s) => 'Transformed $s', // modify,
+          encoder: (s) => s, // write
         );
 
         expect(
@@ -403,11 +403,13 @@ void main() {
         );
 
         await rxStorage.executeUpdate<User>(
-          'User',
-          jsonStringToUser, // read
-          (user) => user?.withName('Transformed ${user.name}'),
+          key: 'User',
+          // read
+          decoder: jsonStringToUser,
           // modify
-          userToJsonString, // write
+          transformer: (user) => user?.withName('Transformed ${user.name}'),
+          // write
+          encoder: userToJsonString,
         );
 
         expect(
@@ -422,20 +424,22 @@ void main() {
 
         expect(
           rxStorage.executeUpdate<String>(
-            'String',
-            (s) => s as String?, // read
-            (s) => 'Transformed $s', // modify,
-            (s) => s, // write
+            key: 'String',
+            decoder: (s) => s as String?, // read
+            transformer: (s) => 'Transformed $s', // modify,
+            encoder: (s) => s, // write
           ),
           throwsException,
         );
         expect(
           rxStorage.executeUpdate<User>(
-            'User',
-            jsonStringToUser, // read
-            (user) => user?.withName('Transformed ${user.name}'),
+            key: 'User',
+            // read
+            decoder: jsonStringToUser,
             // modify
-            userToJsonString, // write
+            transformer: (user) => user?.withName('Transformed ${user.name}'),
+            // write
+            encoder: userToJsonString,
           ),
           throwsException,
         );
