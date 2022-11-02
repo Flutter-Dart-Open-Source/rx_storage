@@ -8,6 +8,7 @@ import '../async/async_memoizer.dart';
 import '../async/async_queue.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
+import '../interface/transactionally_storage.dart';
 import '../logger/event.dart';
 import '../logger/logger.dart';
 import '../model/error.dart';
@@ -332,13 +333,13 @@ class RealRxStorage<Key extends Object, Options,
   @experimental
   @nonVirtual
   @override
-  Future<void> executeUpdate<T extends Object>(
-    Key key,
-    Decoder<T?> decoder,
-    Transformer<T?> transformer,
-    Encoder<T?> encoder, [
+  Future<void> executeUpdate<T extends Object>({
+    required Key key,
+    required Decoder<T?> decoder,
+    required Transformer<T?> transformer,
+    required Encoder<T?> encoder,
     Options? options,
-  ]) {
+  }) {
     assert(_debugAssertNotDisposed());
 
     return _enqueueWritingTask<void>(
@@ -346,8 +347,11 @@ class RealRxStorage<Key extends Object, Options,
       () async {
         // Read
         final value = await read<T>(key, decoder, options);
+
         // Modify
-        final transformed = transformer(value);
+        final futureOr = transformer(value);
+        final transformed = futureOr is Future<T?> ? await futureOr : futureOr;
+
         // Write
         await _writeWithoutSynchronization(key, transformed, encoder, options);
       },

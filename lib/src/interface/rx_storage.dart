@@ -1,17 +1,13 @@
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import '../impl/real_storage.dart';
 import '../logger/logger.dart';
 import 'storage.dart';
-
-/// Transform a value to another value with same type.
-typedef Transformer<T> = T Function(T);
+import 'transactionally_storage.dart';
 
 /// Get [Stream]s by key from persistent storage.
 abstract class RxStorage<Key extends Object, Options>
-    implements Storage<Key, Options> {
+    implements TransactionallyStorage<Key, Options> {
   /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(
     FutureOr<Storage<Key, Options>> storageOrFuture, [
@@ -23,21 +19,6 @@ abstract class RxStorage<Key extends Object, Options>
         logger,
         onDispose,
       );
-
-  /// `Read–modify–write`.
-  ///
-  /// Read value by [key], then decode with [decoder],
-  /// then transform by [transformer],
-  /// then encode with [encoder]
-  /// and finally save decoded value to persistent storage.
-  @experimental
-  Future<void> executeUpdate<T extends Object>(
-    Key key,
-    Decoder<T?> decoder,
-    Transformer<T?> transformer,
-    Encoder<T?> encoder, [
-    Options? options,
-  ]);
 
   /// Return [Stream] that will emit value read from persistent storage.
   /// It will automatic emit value when value associated with key was changed.

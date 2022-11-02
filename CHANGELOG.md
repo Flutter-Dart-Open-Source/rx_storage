@@ -1,3 +1,11 @@
+## 2.1.0-dev.0 - TODO
+
+- Refactor `executeUpdate`:
+    - Convert to named parameters.
+    - Moved to `TransactionallyStorage`.
+    - Update docs.
+    - `Transformer` can return a `Future`.
+
 ## 2.0.0 - Jun 1, 2022
 
 - Update dependencies

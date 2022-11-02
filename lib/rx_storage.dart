@@ -6,6 +6,7 @@ library rx_storage;
 export 'src/impl/real_storage.dart';
 export 'src/interface/rx_storage.dart';
 export 'src/interface/storage.dart';
+export 'src/interface/transactionally_storage.dart';
 export 'src/logger/default_logger.dart';
 export 'src/logger/empty_logger.dart';
 export 'src/logger/event.dart';
