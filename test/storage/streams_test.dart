@@ -366,7 +366,7 @@ void main() {
       expect(() => stream.listen(null), throwsStateError);
     });
 
-    test('executeUpdate', () async {
+    test('update', () async {
       {
         final expected = 'Transformed ${kTestValues['String']}';
         expect(
@@ -378,7 +378,7 @@ void main() {
           kTestValues['String'],
         );
 
-        await rxStorage.executeUpdate<String>(
+        await rxStorage.update<String>(
           key: 'String',
           decoder: (s) => s as String?, // read
           transformer: (s) => 'Transformed $s', // modify,
@@ -402,7 +402,7 @@ void main() {
           user1,
         );
 
-        await rxStorage.executeUpdate<User>(
+        await rxStorage.update<User>(
           key: 'User',
           // read
           decoder: jsonStringToUser,
@@ -423,7 +423,7 @@ void main() {
         fakeStorage.throws = true;
 
         expect(
-          rxStorage.executeUpdate<String>(
+          rxStorage.update<String>(
             key: 'String',
             decoder: (s) => s as String?, // read
             transformer: (s) => 'Transformed $s', // modify,
@@ -432,7 +432,7 @@ void main() {
           throwsException,
         );
         expect(
-          rxStorage.executeUpdate<User>(
+          rxStorage.update<User>(
             key: 'User',
             // read
             decoder: jsonStringToUser,

@@ -1,6 +1,7 @@
 ## 2.1.0-dev.0 - TODO
 
 - Refactor `executeUpdate`:
+    - Renamed to `update`.
     - Convert to named parameters.
     - Moved to `TransactionallyStorage`.
     - Update docs.
