@@ -20,6 +20,7 @@ class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
   static const _initialKeyValue = KeyAndValue<Object, Object>(
       'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);
+  static const _asyncQueueTimeout = Duration(seconds: 30);
 
   /// Trigger subject
   final _keyValuesSubject =
@@ -111,8 +112,9 @@ class RealRxStorage<Key extends Object, Options,
         .putIfAbsent(
           key,
           () => AsyncQueue<Object?>(
-            key,
-            () => _writeQueueResources.remove(key)?.dispose(),
+            key: key,
+            timeout: _asyncQueueTimeout,
+            onTimeout: () => _writeQueueResources.remove(key)?.dispose(),
           ),
         )
         .enqueue(block)

@@ -30,7 +30,12 @@ abstract class RxStorage<Key extends Object, Options>
   Stream<Map<Key, Object?>> observeAll([Options options]);
 
   /// Clean up resources - Closes the streams.
+  ///
   /// This method should be called when a [RxStorage] is no longer needed.
-  /// Once `dispose` is called, all streams will `not` emit changed value when value changed.
+  /// But in a real application, this method is rarely called.
+  ///
+  /// Once `dispose` is called:
+  ///  - All streams will **not** emit changed value when value changed.
+  ///  - All pending writing tasks will be discarded.
   Future<void> dispose();
 }

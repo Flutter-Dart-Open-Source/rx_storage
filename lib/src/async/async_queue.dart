@@ -22,30 +22,40 @@ typedef AsyncQueueBlock<T> = Future<T> Function();
 /// Serial queue are often used to synchronize access to a specific value or resource to prevent data races to occur.
 @internal
 class AsyncQueue<T> {
-  static const _timeout = Duration(seconds: 30);
-
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
-  final _countS = StreamController<int>(sync: true);
   late final DisposeBag _bag;
 
-  /// Construct [AsyncQueue].
-  AsyncQueue(Object key, void Function() onTimeout) {
+  final _countS = StateSubject<int>(0, sync: true);
+
+  /// Construct an [AsyncQueue].
+  AsyncQueue({
+    required Object key,
+    required Duration timeout,
+    required void Function() onTimeout,
+  }) {
     _bag = DisposeBag(
         const <Object>[], '( AsyncQueue ~ $key ~ ${shortHash(this)} )');
 
     _blockS.disposedBy(_bag);
     _countS.disposedBy(_bag);
 
-    final count$ = _countS.stream
-        .scan<int?>((acc, value, _) => acc! + value, 0)
-        .shareValueNotReplay(null);
-    count$
+    // when the queue is empty, we wait for a timeout to occur
+    // and then we call the onTimeout callback.
+    _countS
         .where((count) => count == 0)
-        .switchMap((_) => Rx.timer<void>(null, _timeout)
-            .where((_) => count$.value == 0)
-            .takeUntil(count$.where((count) => count != null && count > 0)))
-        .listen((_) => onTimeout())
-        .disposedBy(_bag);
+        .switchMap((_) => Rx.timer<void>(null, timeout)
+            .where((_) => _countS.value == 0)
+            .takeUntil(_countS.where((count) => count > 0)))
+        .listen((_) {
+      assert(() {
+        if (_countS.value != 0) {
+          throw StateError('AsyncQueue is not empty!');
+        }
+        return true;
+      }());
+
+      onTimeout();
+    }).disposedBy(_bag);
 
     Future<T> executeBlock(_AsyncQueueEntry<T> entry) {
       final completer = entry.completer;
@@ -64,7 +74,7 @@ class AsyncQueue<T> {
       }).onError<Object>((e, s) {
         completer.completeError(e, s);
         throw e;
-      }).whenComplete(() => _countS.add(-1));
+      }).whenComplete(() => _countS.value = _countS.value - 1);
     }
 
     _blockS.stream
@@ -73,7 +83,7 @@ class AsyncQueue<T> {
         .disposedBy(_bag);
   }
 
-  /// Close queue.
+  /// Close queue, discard all pending entries.
   Future<void> dispose() => _bag.dispose();
 
   /// Add block to queue.
@@ -87,7 +97,7 @@ class AsyncQueue<T> {
 
     final completer = Completer<T>.sync();
     _blockS.add(_AsyncQueueEntry(completer, block));
-    _countS.add(1);
+    _countS.value = _countS.value + 1;
     return completer.future;
   }
 }
