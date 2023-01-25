@@ -60,7 +60,7 @@ void main() {
       );
 
       await pumpEventQueue();
-      unawaited(queue.dispose());
+      _unawaited(queue.dispose());
 
       expect(
         () => queue.enqueue(() => Future.value(0)),
@@ -80,7 +80,7 @@ void main() {
       await pumpEventQueue();
 
       for (var i = 0; i < 10; i++) {
-        unawaited(queue.enqueue(() => Future.value()));
+        _unawaited(queue.enqueue(() => Future.value()));
         await delay(halfTimeout);
         expect(count, 0);
       }
@@ -91,4 +91,4 @@ void main() {
   });
 }
 
-void unawaited(Future<void>? future) {}
+void _unawaited(Future<void>? future) {}
