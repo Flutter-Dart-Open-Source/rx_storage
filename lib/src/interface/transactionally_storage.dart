@@ -25,7 +25,7 @@ abstract class TransactionallyStorage<Key extends Object, Options>
   /// - Encode the transformed value with [encoder].
   /// - Finally, save encoded value to persistent storage.
   @experimental
-  Future<void> executeUpdate<T extends Object>({
+  Future<void> update<T extends Object>({
     required Key key,
     required Decoder<T?> decoder,
     required Transformer<T?> transformer,

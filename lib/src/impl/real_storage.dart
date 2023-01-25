@@ -333,7 +333,7 @@ class RealRxStorage<Key extends Object, Options,
   @experimental
   @nonVirtual
   @override
-  Future<void> executeUpdate<T extends Object>({
+  Future<void> update<T extends Object>({
     required Key key,
     required Decoder<T?> decoder,
     required Transformer<T?> transformer,
