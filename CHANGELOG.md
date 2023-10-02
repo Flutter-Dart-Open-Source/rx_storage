@@ -1,9 +1,8 @@
-## 2.1.0-dev.0 - TODO
+## 2.1.0 - TODO
 
 - Accept `Dart SDK` versions above 3.0.
 
-- Refactor `executeUpdate`
-  - Rename to `update` and convert its parameters to named parameters
+- Deprecated `RxStorage.executeUpdate`. It has been replaced by `update` method.
     ```dart
     Future<void> update<T extends Object>({
       required Key key,
@@ -13,8 +12,8 @@
       Options? options,
     })
     ```
-  - Move `update` method from `RxStorage` interface to a new `TransactionallyStorage` interface.
-  - `Transformer<T>` can return a `Future<T>`.
+
+- `Transformer<T>` can return a `Future<T>`.
 
 - Update dependencies
   - `disposebag` to `^1.5.1`.

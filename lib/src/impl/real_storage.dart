@@ -332,6 +332,23 @@ class RealRxStorage<Key extends Object, Options,
   // Get streams (implements [RxStorage])
   //
 
+  @nonVirtual
+  @experimental
+  @override
+  Future<void> executeUpdate<T extends Object>(
+    Key key,
+    Decoder<T?> decoder,
+    Transformer<T?> transformer,
+    Encoder<T?> encoder, [
+    Options? options,
+  ]) =>
+      update(
+        key: key,
+        decoder: decoder,
+        transformer: transformer,
+        encoder: encoder,
+      );
+
   @experimental
   @nonVirtual
   @override
