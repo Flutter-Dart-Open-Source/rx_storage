@@ -8,11 +8,18 @@ funding:
   - https://www.buymeacoffee.com/hoc081098
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.12.0 <4.0.0'
+
+topics:
+  - rxdart
+  - hoc081098
+  - rx-storage
+  - reactive-storage
+  - reactive-programming
 
 dependencies:
   rxdart_ext: ^0.2.1
-  disposebag: ^1.5.0
+  disposebag: ^1.5.1
   meta: ^1.7.0
   stack_trace: ^1.10.0
 

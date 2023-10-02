@@ -69,7 +69,7 @@ class RealRxStorage<Key extends Object, Options,
   // Internal
   //
 
-  void _setupLogger(RxStorageLogger logger) {
+  void _setupLogger(RxStorageLogger<Key, Options> logger) {
     _loggerEventController = StreamController(sync: true)
       ..disposedBy(_bag)
       ..stream.listen(logger.log).disposedBy(_bag);
