@@ -8,7 +8,7 @@ typedef Transformer<T> = FutureOr<T> Function(T);
 
 /// A persistent store for simple data.
 /// Data is persisted to disk asynchronously and transactionally.
-abstract class TransactionallyStorage<Key extends Object, Options>
+abstract class TransactionalStorage<Key extends Object, Options>
     implements Storage<Key, Options> {
   /// `Read–modify–write`.
   ///

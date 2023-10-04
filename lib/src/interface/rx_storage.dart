@@ -5,11 +5,11 @@ import 'package:meta/meta.dart';
 import '../impl/real_storage.dart';
 import '../logger/logger.dart';
 import 'storage.dart';
-import 'transactionally_storage.dart';
+import 'transactional_storage.dart';
 
 /// Get [Stream]s by key from persistent storage.
 abstract class RxStorage<Key extends Object, Options>
-    implements TransactionallyStorage<Key, Options> {
+    implements TransactionalStorage<Key, Options> {
   /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(
     FutureOr<Storage<Key, Options>> storageOrFuture, [

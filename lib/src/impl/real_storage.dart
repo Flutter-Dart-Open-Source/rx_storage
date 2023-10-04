@@ -8,7 +8,7 @@ import '../async/async_memoizer.dart';
 import '../async/async_queue.dart';
 import '../interface/rx_storage.dart';
 import '../interface/storage.dart';
-import '../interface/transactionally_storage.dart';
+import '../interface/transactional_storage.dart';
 import '../logger/event.dart';
 import '../logger/logger.dart';
 import '../model/error.dart';
