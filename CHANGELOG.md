@@ -1,4 +1,4 @@
-## 2.1.0 - TODO
+## 2.1.0 - Oct 4, 2023
 
 - Accept `Dart SDK` versions above 3.0.
 
