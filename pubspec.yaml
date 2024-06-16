@@ -18,7 +18,7 @@ topics:
   - reactive-programming
 
 dependencies:
-  rxdart_ext: ^0.2.1
+  rxdart_ext: ^0.3.0
   disposebag: ^1.5.1
   meta: ^1.7.0
   stack_trace: ^1.10.0
