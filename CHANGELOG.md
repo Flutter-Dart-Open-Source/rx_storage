@@ -1,3 +1,8 @@
+## 3.0.0 - Jul 19, 2024
+
+- Update dependencies
+  - `rxdart_ext` to `^0.3.0` (~ `rxdart` to `^0.28.0`).
+
 ## 2.1.0 - Oct 4, 2023
 
 - Accept `Dart SDK` versions above 3.0.

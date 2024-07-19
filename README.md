@@ -2,12 +2,9 @@
 
 Reactive storage for Dart/Flutter. RxDart Storage for Dart/Flutter.
 
+## [rx_shared_preferences](https://github.com/hoc081098/rx_shared_preferences) is an extension of this package, check it out!
+
 ## Author: [Petrus Nguyễn Thái Học](https://github.com/hoc081098)
-
-Liked some of my work? Buy me a coffee (or more likely a beer)
-
-<a href="https://www.buymeacoffee.com/hoc081098" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height=64></a>
-
 [![Pub Version](https://img.shields.io/pub/v/rx_storage?style=flat)](https://pub.dev/packages/rx_storage)
 [![Pub Version](https://img.shields.io/pub/v/rx_storage?style=flat&include_prereleases)](https://pub.dev/packages/rx_storage)
 [![codecov](https://codecov.io/gh/Flutter-Dart-Open-Source/rx_storage/branch/master/graph/badge.svg?token=6eORcR6Web)](https://codecov.io/gh/Flutter-Dart-Open-Source/rx_storage)
@@ -15,7 +12,13 @@ Liked some of my work? Buy me a coffee (or more likely a beer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Style](https://img.shields.io/badge/style-pedantic-40c4ff.svg)](https://github.com/dart-lang/pedantic)
 
-## Note: [rx_shared_preferences](https://github.com/hoc081098/rx_shared_preferences) is an extension of this package.
+<p align="center">
+<img src="https://github.com/Flutter-Dart-Open-Source/rx_storage/blob/master/screenshots/logo.png?raw=true" height="200" alt="RxDart" />
+</p>
+
+Liked some of my work? Buy me a coffee (or more likely a beer).
+
+<a href="https://www.buymeacoffee.com/hoc081098" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height=64></a>
 
 ## More detail about returned `Stream`
 
