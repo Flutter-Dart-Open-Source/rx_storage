@@ -13,12 +13,10 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    
     strategy:
       matrix:
-        sdk: [ beta, stable, 2.15.0, 2.12.0 ]
+        sdk: [ beta, stable, 3.0.0 ]
 
     steps:
       - uses: actions/checkout@v7
