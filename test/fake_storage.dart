@@ -131,14 +131,10 @@ class FakeStorage implements StringKeyStorage {
 class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage, StringKeyStorage {
   FakeRxStorage(
-    FutureOr<StringKeyStorage> storageOrFuture, [
-    FakeLogger? logger,
-    void Function()? onDispose,
-  ]) : super(
-          storageOrFuture,
-          logger,
-          onDispose,
-        );
+    super.storageOrFuture, [
+    FakeLogger? super.logger,
+    super.onDispose,
+  ]);
 
   @override
   Future<Map<String, Object?>> reload() {

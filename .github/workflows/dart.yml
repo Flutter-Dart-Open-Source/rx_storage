@@ -46,7 +46,7 @@ jobs:
         run: dart pub global activate coverage
 
       - name: Run tests
-        run: dart pub run test test/rx_storage_test.dart --chain-stack-traces
+        run: dart run test test/rx_storage_test.dart --chain-stack-traces
 
       - name: Start Observatory
         run: dart --disable-service-auth-codes --enable-vm-service=8111 --pause-isolates-on-exit --enable-asserts test/rx_storage_test.dart &
