@@ -9,7 +9,7 @@ import 'logger.dart';
 // ignore_for_file: public_member_api_docs
 
 /// Default Logger's implementation, simply print to the console.
-class RxStorageDefaultLogger<Key extends Object, Options>
+base class RxStorageDefaultLogger<Key extends Object, Options>
     implements RxStorageLogger<Key, Options> {
   //
   // some unicode characters

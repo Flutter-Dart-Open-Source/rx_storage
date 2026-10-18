@@ -16,7 +16,7 @@ import '../model/key_and_value.dart';
 import '../util.dart';
 
 /// Default [RxStorage] implementation.
-class RealRxStorage<Key extends Object, Options,
+base class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
   static const _initialKeyValue = KeyAndValue<Object, Object>(
       'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);
@@ -329,25 +329,8 @@ class RealRxStorage<Key extends Object, Options,
   }
 
   //
-  // Get streams (implements [RxStorage])
+  // Transactional updates (implements [TransactionalStorage])
   //
-
-  @nonVirtual
-  @experimental
-  @override
-  Future<void> executeUpdate<T extends Object>(
-    Key key,
-    Decoder<T?> decoder,
-    Transformer<T?> transformer,
-    Encoder<T?> encoder, [
-    Options? options,
-  ]) =>
-      update(
-        key: key,
-        decoder: decoder,
-        transformer: transformer,
-        encoder: encoder,
-      );
 
   @experimental
   @nonVirtual
@@ -376,6 +359,10 @@ class RealRxStorage<Key extends Object, Options,
       },
     );
   }
+
+  //
+  // Get streams (implements [RxStorage])
+  //
 
   @nonVirtual
   @override

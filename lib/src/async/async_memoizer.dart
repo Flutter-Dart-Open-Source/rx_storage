@@ -26,7 +26,7 @@ import 'dart:async';
 ///   });
 /// }
 /// ```
-class AsyncMemoizer<T> {
+final class AsyncMemoizer<T> {
   /// The future containing the method's result.
   ///
   /// This can be accessed at any time, and will fire once [runOnce] is called.
