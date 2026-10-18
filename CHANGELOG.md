@@ -14,8 +14,9 @@
 - Update dependencies:
   - `rxdart_ext` from `^0.3.0` to `^0.4.0`.
   - `stack_trace` from `^1.10.0` to `^1.11.1`.
-- `RxStorage.executeUpdate` remains available as a deprecated alias; use
-  `RxStorage.update` instead.
+- **Breaking**: remove the deprecated `RxStorage.executeUpdate` API and its
+  `RealRxStorage` implementation. Use `update` with named arguments (`key`,
+  `decoder`, `transformer`, `encoder`, and optional `options`) instead.
 - Clarify the README and illustrate stream emissions with a timeline diagram.
 - Exclude repository tooling, image prompts, and generated output from the
   published package.
