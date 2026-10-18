@@ -1,0 +1,23 @@
+# Dependency caches, generated output, and local state.
+.dart_tool/
+.packages
+pubspec.lock
+build/
+doc/
+coverage/
+coverage.json
+lcov.info
+.DS_Store
+*.dart.js
+*.info.json
+*.js_
+*.js.deps
+*.js.map
+
+# Repository tooling and image-generation instructions.
+.github/
+.idea/
+*.iml
+AGENTS.md
+renovate.json
+screenshots/*.prompt.md

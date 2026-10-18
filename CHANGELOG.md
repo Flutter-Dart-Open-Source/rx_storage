@@ -1,3 +1,15 @@
+## 4.0.0 - Oct 18, 2026
+
+- **Breaking**: require Dart SDK `>=3.0.0 <4.0.0`; Dart 2 is no longer supported.
+- Update dependencies:
+  - `rxdart_ext` from `^0.3.0` to `^0.4.0`.
+  - `stack_trace` from `^1.10.0` to `^1.11.1`.
+- Keep the storage API unchanged. `RxStorage.executeUpdate` remains available
+  as a deprecated alias; use `RxStorage.update` instead.
+- Clarify the README and illustrate stream emissions with a timeline diagram.
+- Exclude repository tooling, image prompts, and generated output from the
+  published package.
+
 ## 3.0.0 - Jul 19, 2024
 
 - Update dependencies

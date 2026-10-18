@@ -3,6 +3,8 @@
 Reactive storage for Dart/Flutter, powered by RxDart.
 RxDart Storage for Dart/Flutter.
 
+Requires Dart SDK `>=3.0.0 <4.0.0`.
+
 ## [rx_shared_preferences](https://github.com/hoc081098/rx_shared_preferences) is an extension of this package, check it out!
 
 ## Author: [Petrus Nguyễn Thái Học](https://github.com/hoc081098)

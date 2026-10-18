@@ -1,6 +1,6 @@
-/// Support for doing something awesome.
+/// Reactive streams over asynchronous key-value storage.
 ///
-/// More dartdocs go here.
+/// Wrap a [Storage] adapter with [RxStorage] to observe values as they change.
 library rx_storage;
 
 export 'src/impl/real_storage.dart';

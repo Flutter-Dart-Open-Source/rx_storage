@@ -29,9 +29,9 @@ abstract class RxStorage<Key extends Object, Options>
   /// then encode with [encoder]
   /// and finally save decoded value to persistent storage.
   ///
-  /// Use [update] instead. It will be removed in v3.0.0.
+  /// Use [update] instead.
   @experimental
-  @Deprecated('Use update instead. It will be removed in v3.0.0')
+  @Deprecated('Use update instead.')
   Future<void> executeUpdate<T extends Object>(
     Key key,
     Decoder<T?> decoder,
