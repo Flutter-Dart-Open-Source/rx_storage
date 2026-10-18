@@ -1,11 +1,21 @@
 ## 4.0.0 - Oct 18, 2026
 
 - **Breaking**: require Dart SDK `>=3.0.0 <4.0.0`; Dart 2 is no longer supported.
+- **Breaking**: enforce inheritance and implementation restrictions with Dart 3
+  class modifiers:
+  - `Storage`, `TransactionalStorage`, `RxStorage`, `RxStorageLogger`, and
+    `RxStorageLoggerEvent` are now `abstract interface` classes. Implement these
+    contracts instead of extending them.
+  - `RealRxStorage`, `RxStorageDefaultLogger`, and `RxStorageEmptyLogger` are now
+    `base` classes. Extend them to reuse their implementation, and mark subclasses
+    as `base`, `final`, or `sealed`.
+  - `KeyAndValue`, `RxStorageError`, and the concrete logger event classes are now
+    `final`. Define custom logger events by implementing `RxStorageLoggerEvent`.
 - Update dependencies:
   - `rxdart_ext` from `^0.3.0` to `^0.4.0`.
   - `stack_trace` from `^1.10.0` to `^1.11.1`.
-- Keep the storage API unchanged. `RxStorage.executeUpdate` remains available
-  as a deprecated alias; use `RxStorage.update` instead.
+- `RxStorage.executeUpdate` remains available as a deprecated alias; use
+  `RxStorage.update` instead.
 - Clarify the README and illustrate stream emissions with a timeline diagram.
 - Exclude repository tooling, image prompts, and generated output from the
   published package.

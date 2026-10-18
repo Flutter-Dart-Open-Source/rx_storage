@@ -13,7 +13,7 @@ abstract class StringKeyRxStorage extends StringKeyStorage
 
 abstract class FakeLogger implements RxStorageLogger<String, void> {}
 
-class FakeDefaultLogger extends RxStorageDefaultLogger<String, void>
+final class FakeDefaultLogger extends RxStorageDefaultLogger<String, void>
     implements FakeLogger {
   const FakeDefaultLogger();
 

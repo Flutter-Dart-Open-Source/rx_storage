@@ -4,7 +4,7 @@ import 'event.dart';
 import 'logger.dart';
 
 /// Log nothing :)
-final class RxStorageEmptyLogger<Key extends Object, Options>
+base class RxStorageEmptyLogger<Key extends Object, Options>
     implements RxStorageLogger<Key, Options> {
   /// Constructs a [RxStorageEmptyLogger].
   const RxStorageEmptyLogger();
