@@ -9,7 +9,7 @@ typedef Encoder<T> = FutureOr<Object?> Function(T t);
 typedef Decoder<T> = FutureOr<T> Function(Object? o);
 
 /// A persistent store for simple data. Data is persisted to disk asynchronously.
-abstract class Storage<Key extends Object, Options> {
+abstract interface class Storage<Key extends Object, Options> {
   /// Returns a future complete with value true if the persistent storage
   /// contains the given [key].
   Future<bool> containsKey(Key key, [Options? options]);

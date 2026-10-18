@@ -8,7 +8,7 @@ import 'storage.dart';
 import 'transactional_storage.dart';
 
 /// Get [Stream]s by key from persistent storage.
-abstract class RxStorage<Key extends Object, Options>
+abstract interface class RxStorage<Key extends Object, Options>
     implements TransactionalStorage<Key, Options> {
   /// Constructs a [RxStorage] by wrapping a [Storage].
   factory RxStorage(

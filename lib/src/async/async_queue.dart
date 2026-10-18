@@ -6,7 +6,7 @@ import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../util.dart';
 
-class _AsyncQueueEntry<T> {
+final class _AsyncQueueEntry<T> {
   final Completer<T> completer;
 
   final AsyncQueueBlock<T> block;
@@ -21,7 +21,7 @@ typedef AsyncQueueBlock<T> = Future<T> Function();
 /// A serial queue that executes single block at a time and it does this in FIFO order, first in, first out.
 /// Serial queue are often used to synchronize access to a specific value or resource to prevent data races to occur.
 @internal
-class AsyncQueue<T> {
+final class AsyncQueue<T> {
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
   late final DisposeBag _bag;
 

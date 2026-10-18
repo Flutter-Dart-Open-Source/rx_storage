@@ -16,7 +16,7 @@ import '../model/key_and_value.dart';
 import '../util.dart';
 
 /// Default [RxStorage] implementation.
-class RealRxStorage<Key extends Object, Options,
+base class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
   static const _initialKeyValue = KeyAndValue<Object, Object>(
       'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);

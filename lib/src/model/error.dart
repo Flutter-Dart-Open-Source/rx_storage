@@ -2,7 +2,7 @@ import 'package:stack_trace/stack_trace.dart';
 
 /// An Object which acts as a tuple containing both an error and the
 /// corresponding stack trace.
-class RxStorageError {
+final class RxStorageError {
   /// A reference to the wrapped error object.
   final Object error;
 

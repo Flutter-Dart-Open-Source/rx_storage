@@ -4,14 +4,14 @@ import 'package:rx_storage/rx_storage.dart';
 
 import 'utils/synchronous_future.dart';
 
-abstract class StringKeyStorage extends Storage<String, void> {
+abstract class StringKeyStorage implements Storage<String, void> {
   Future<Map<String, Object?>> reload();
 }
 
 abstract class StringKeyRxStorage extends StringKeyStorage
     implements RxStorage<String, void> {}
 
-abstract class FakeLogger extends RxStorageLogger<String, void> {}
+abstract class FakeLogger implements RxStorageLogger<String, void> {}
 
 class FakeDefaultLogger extends RxStorageDefaultLogger<String, void>
     implements FakeLogger {
@@ -128,7 +128,7 @@ class FakeStorage implements StringKeyStorage {
       : SynchronousFuture(<String, Object?>{..._map});
 }
 
-class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
+final class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
     implements StringKeyRxStorage, StringKeyStorage {
   FakeRxStorage(
     super.storageOrFuture, [
