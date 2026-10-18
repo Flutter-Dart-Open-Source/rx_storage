@@ -40,33 +40,36 @@ final class InMemoryStorageAdapter implements Storage<String, void> {
   }
 }
 
-void main() async {
+Future<void> main() async {
   final adapter = InMemoryStorageAdapter();
   final rxStorage = RxStorage<String, void>(adapter);
 
-  final key = 'key';
-  rxStorage
-      .observe(key, (v) => v as String?)
-      .listen((String? s) => print('[Observe 1] Value: $s'));
-  rxStorage
-      .observe(key, (v) => v as String?)
-      .listen((String? s) => print('[Observe 2] Value: $s'));
+  try {
+    final key = 'key';
+    rxStorage
+        .observe(key, (v) => v as String?)
+        .listen((String? s) => print('[Observe 1] Value: $s'));
+    rxStorage
+        .observe(key, (v) => v as String?)
+        .listen((String? s) => print('[Observe 2] Value: $s'));
 
-  await delay(1);
-  print('--- START ---');
+    await delay(1);
+    print('--- START ---');
 
-  await rxStorage.write(key, '<<1>>', (v) => v);
-  print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
-  print('-' * 80);
+    await rxStorage.write(key, '<<1>>', (v) => v);
+    print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
+    print('-' * 80);
 
-  await rxStorage.write(key, '<<2>>', (v) => v);
-  print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
-  print('-' * 80);
+    await rxStorage.write(key, '<<2>>', (v) => v);
+    print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
+    print('-' * 80);
 
-  await rxStorage.remove(key);
-  print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
-  print('-' * 80);
+    await rxStorage.remove(key);
+    print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
+    print('-' * 80);
 
-  await delay(500);
-  await rxStorage.dispose();
+    await delay(500);
+  } finally {
+    await rxStorage.dispose();
+  }
 }
