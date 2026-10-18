@@ -38,16 +38,7 @@ Liked some of my work? Buy me a coffee (or more likely a beer).
 
 -   It **can emit** two consecutive data events that are equal. Use an Rx operator such as `distinct` (commonly known as `distinctUntilChanged` in other Rx implementations) to skip data events that are equal to the previous data event.
 
-```text
-Key changed:  |----------K1---K2------K1----K1-----K2---------> time
-              |
-Value stream: |-----@----@------------@-----@-----------------> time
-              |    ^
-              |    |
-              |  Listen(key=K1)
-              |
-              |  @: nullable value or TypeError
-```
+![Stream timeline: subscribing to K1 triggers an initial read, followed by events for K1 changes only.](https://raw.githubusercontent.com/Flutter-Dart-Open-Source/rx_storage/master/screenshots/stream-timeline.png)
 
 ## Usage
 
