@@ -1,13 +1,15 @@
-## Unreleased
+## 4.0.0 - TBD
 
-- Add the built-in `InMemoryStorage<Key>` adapter with synchronous and
-  asynchronous encoder/decoder support. Encoded null values retain their keys;
-  `remove()` deletes entries, and `readAll()` returns a shallow map copy.
-- Use the built-in adapter in the README and runnable example.
+### Dependencies
 
-## 4.0.0 - Oct 18, 2026
+- Update dependencies:
+  - `rxdart_ext` from `^0.3.0` to `^0.4.0`.
+  - `stack_trace` from `^1.10.0` to `^1.11.1`.
 
 - **Breaking**: require Dart SDK `>=3.0.0 <4.0.0`; Dart 2 is no longer supported.
+
+### Changes
+
 - **Breaking**: enforce inheritance and implementation restrictions with Dart 3
   class modifiers:
   - `Storage`, `TransactionalStorage`, `RxStorage`, `RxStorageLogger`, and
@@ -18,12 +20,17 @@
     as `base`, `final`, or `sealed`.
   - `KeyAndValue`, `RxStorageError`, and the concrete logger event classes are now
     `final`. Define custom logger events by implementing `RxStorageLoggerEvent`.
-- Update dependencies:
-  - `rxdart_ext` from `^0.3.0` to `^0.4.0`.
-  - `stack_trace` from `^1.10.0` to `^1.11.1`.
+
 - **Breaking**: remove the deprecated `RxStorage.executeUpdate` API and its
   `RealRxStorage` implementation. Use `update` with named arguments (`key`,
   `decoder`, `transformer`, `encoder`, and optional `options`) instead.
+
+- Add the built-in `InMemoryStorage<Key>` adapter with synchronous and
+  asynchronous encoder/decoder support. Encoded null values retain their keys;
+  `remove()` deletes entries, and `readAll()` returns a shallow map copy.
+
+### Docs
+
 - Clarify the README and illustrate stream emissions with a timeline diagram.
 - Exclude repository tooling, image prompts, and generated output from the
   published package.
