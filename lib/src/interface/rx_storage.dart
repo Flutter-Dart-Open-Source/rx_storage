@@ -63,11 +63,10 @@ abstract interface class RxStorage<Key extends Object, Options>
   ///
   /// Call this when the wrapper is no longer needed, and do not use it afterward.
   /// Queued writing tasks that have not started are discarded, so await writes
-  /// that must finish before disposing. Disposal does not roll back backend work
-  /// that has already started.
+  /// that must finish before disposing. Disposal does not roll back storage
+  /// operations that have already started.
   ///
-  /// The adapter's data is not cleared, and backend resources are not closed
-  /// automatically. Use the constructor's `onDispose` callback for backend cleanup
-  /// when appropriate.
+  /// This method does not clear the adapter's data or release resources owned by
+  /// the adapter. The caller is responsible for any cleanup the adapter requires.
   Future<void> dispose();
 }

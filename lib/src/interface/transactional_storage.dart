@@ -25,7 +25,7 @@ abstract interface class TransactionalStorage<Key extends Object, Options>
   /// Each callback may perform synchronous or asynchronous work. The returned
   /// future completes after the write finishes. A failure stops subsequent steps
   /// and completes the future with that error. Rollback of callback side effects
-  /// or partially completed backend writes is not guaranteed by this interface.
+  /// or partially completed storage writes is not guaranteed by this interface.
   ///
   /// In the default `RxStorage` implementation, the entire operation shares a
   /// queue with [write], [remove], and other updates for the same key on the same
