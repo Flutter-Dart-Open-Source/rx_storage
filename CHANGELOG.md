@@ -1,3 +1,10 @@
+## Unreleased
+
+- Add the built-in `InMemoryStorage<Key>` adapter with synchronous and
+  asynchronous encoder/decoder support. Encoded null values retain their keys;
+  `remove()` deletes entries, and `readAll()` returns a shallow map copy.
+- Use the built-in adapter in the README and runnable example.
+
 ## 4.0.0 - Oct 18, 2026
 
 - **Breaking**: require Dart SDK `>=3.0.0 <4.0.0`; Dart 2 is no longer supported.
