@@ -13,3 +13,4 @@ export 'src/logger/event.dart';
 export 'src/logger/logger.dart';
 export 'src/model/error.dart';
 export 'src/model/key_and_value.dart';
+export 'src/storage/in_memory_storage.dart';

@@ -63,7 +63,19 @@ the same key within one wrapper instance. That queue does not serialize reads,
 
 ## Usage
 
-A complete example using an in-memory storage adapter. Both observers receive `null`, `<<1>>`, `<<2>>`, then `null` after the key is removed. The adapter keeps data in memory only.
+The built-in `InMemoryStorage<Key>` adapter needs no setup or additional
+dependencies. Each instance starts empty and keeps data in memory without
+persisting it between application runs.
+
+-   Encoders and decoders can be synchronous or asynchronous.
+-   Encoded `null` values retain their keys: `containsKey()` returns `true` until
+    the key is removed with `remove()` or the storage is cleared.
+-   `readAll()` returns a shallow map copy. Stored objects are kept by reference,
+    without cloning on write or read. Mutating a stored object directly does not
+    trigger stream events.
+
+In this complete example, both observers receive `null`, `<<1>>`, `<<2>>`, then
+`null` after the key is removed.
 
 Run [the example](https://github.com/Flutter-Dart-Open-Source/rx_storage/blob/master/example/rx_storage_example.dart) from the repository root:
 
@@ -73,49 +85,9 @@ dart run example/rx_storage_example.dart
 
 ```dart
 import 'package:rx_storage/rx_storage.dart';
-import 'package:rxdart_ext/rxdart_ext.dart';
-
-final class InMemoryStorageAdapter implements Storage<String, void> {
-  final _map = <String, Object?>{};
-
-  @override
-  Future<void> clear([void options]) {
-    _map.clear();
-    return Future.value(null);
-  }
-
-  @override
-  Future<bool> containsKey(String key, [void options]) =>
-      Future.value(_map.containsKey(key));
-
-  @override
-  Future<T?> read<T extends Object>(String key, Decoder<T?> decoder,
-          [void options]) =>
-      Future.sync(() => decoder(_map[key]));
-
-  @override
-  Future<Map<String, Object?>> readAll([void options]) =>
-      Future.value({..._map});
-
-  @override
-  Future<void> remove(String key, [void options]) {
-    _map.remove(key);
-    return Future.value(null);
-  }
-
-  @override
-  Future<void> write<T extends Object>(
-      String key, T? value, Encoder<T?> encoder,
-      [void options]) {
-    return Future.sync(() async {
-      final encoded = await encoder(value);
-      _map[key] = encoded;
-    });
-  }
-}
 
 Future<void> main() async {
-  final adapter = InMemoryStorageAdapter();
+  final adapter = InMemoryStorage<String>();
   final rxStorage = RxStorage<String, void>(adapter);
 
   try {
@@ -127,7 +99,7 @@ Future<void> main() async {
         .observe(key, (v) => v as String?)
         .listen((String? s) => print('[Observe 2] Value: $s'));
 
-    await delay(1);
+    await Future<void>.delayed(const Duration(milliseconds: 1));
     print('--- START ---');
 
     await rxStorage.write(key, '<<1>>', (v) => v);
@@ -142,7 +114,7 @@ Future<void> main() async {
     print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
     print('-' * 80);
 
-    await delay(500);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
   } finally {
     await rxStorage.dispose();
   }
