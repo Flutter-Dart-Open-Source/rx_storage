@@ -3,7 +3,7 @@ import 'package:meta/meta.dart';
 import '../model/error.dart';
 import '../model/key_and_value.dart';
 
-/// Event when reading, writing storage.
+/// Base interface for storage-operation and stream log events.
 @immutable
 abstract interface class RxStorageLoggerEvent<Key extends Object, Options> {}
 

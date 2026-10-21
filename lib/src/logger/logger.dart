@@ -1,7 +1,7 @@
 import 'event.dart';
 
-/// Log messages about operations (such as read, write, value change) and stream events.
+/// Receives storage-operation and stream events for an `RxStorage` wrapper.
 abstract interface class RxStorageLogger<Key extends Object, Options> {
-  /// Logs event.
+  /// Handles a storage-operation or stream [event].
   void log(RxStorageLoggerEvent<Key, Options> event);
 }

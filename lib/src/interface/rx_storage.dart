@@ -5,10 +5,18 @@ import '../logger/logger.dart';
 import 'storage.dart';
 import 'transactional_storage.dart';
 
-/// Get [Stream]s by key from persistent storage.
+/// Reactive streams over a [Storage] adapter.
+///
+/// The default implementation emits notifications for successful mutations
+/// through this wrapper. Direct adapter changes and changes through other
+/// wrappers are not automatically observed.
 abstract interface class RxStorage<Key extends Object, Options>
     implements TransactionalStorage<Key, Options> {
-  /// Constructs a [RxStorage] by wrapping a [Storage].
+  /// Wraps a [Storage], or a future that resolves to one, in a [RealRxStorage].
+  ///
+  /// Operations wait for [storageOrFuture] to resolve when necessary. If provided,
+  /// [logger] receives operation and stream events, and [onDispose] is called
+  /// after the wrapper releases its resources.
   factory RxStorage(
     FutureOr<Storage<Key, Options>> storageOrFuture, [
     RxStorageLogger<Key, Options>? logger,
@@ -20,22 +28,46 @@ abstract interface class RxStorage<Key extends Object, Options>
         onDispose,
       );
 
-  /// Return [Stream] that will emit value read from persistent storage.
-  /// It will automatic emit value when value associated with key was changed.
+  /// Returns a single-subscription stream of nullable values for [key].
+  ///
+  /// Listening triggers an initial [Storage.read] using [decoder] and [options],
+  /// without first checking [containsKey]. A missing key and a stored null value
+  /// both reach the decoder as null. The decoder determines the initial value,
+  /// including any default for null, or produces a stream error if decoding fails.
+  /// The stream does not convey whether the key exists.
+  ///
+  /// After a successful [write] or [update] through this wrapper, the stream emits
+  /// the original value passed to the write, without reading or decoding it again.
+  /// A successful [remove] emits null. A successful [clear] emits null for keys
+  /// returned by the adapter's [Storage.readAll] before clearing. These null events
+  /// bypass [decoder], even if it supplies a default for the initial read.
+  ///
+  /// Read and decoding failures, and subsequent values incompatible with [T],
+  /// are emitted as stream errors. Equal consecutive values are not filtered;
+  /// use [Stream.distinct] to suppress duplicates.
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options options]);
 
-  /// Return [Stream] that will emit all values associated with key read from persistent storage.
-  /// It will automatic emit all keys when any value was changed.
+  /// Returns a single-subscription stream of all stored entries.
+  ///
+  /// Listening triggers an initial [Storage.readAll] using [options]. Every
+  /// successful [write], [update], [remove], or [clear] through this wrapper
+  /// triggers another read, even if the resulting entries are unchanged.
+  ///
+  /// Map values are stored representations; no [Decoder] is applied. Each
+  /// emission reflects the read when it runs, rather than a snapshot captured at
+  /// the mutation. Read failures are emitted as stream errors.
   Stream<Map<Key, Object?>> observeAll([Options options]);
 
-  /// Clean up resources - Closes the streams.
+  /// Releases this wrapper's stream, logger, and write-queue resources.
   ///
-  /// This method should be called when a [RxStorage] is no longer needed.
-  /// But in a real application, this method is rarely called.
+  /// Call this when the wrapper is no longer needed, and do not use it afterward.
+  /// Queued writing tasks that have not started are discarded, so await writes
+  /// that must finish before disposing. Disposal does not roll back backend work
+  /// that has already started.
   ///
-  /// Once `dispose` is called:
-  ///  - All streams will **not** emit changed value when value changed.
-  ///  - All pending writing tasks will be discarded.
+  /// The adapter's data is not cleared, and backend resources are not closed
+  /// automatically. Use the constructor's `onDispose` callback for backend cleanup
+  /// when appropriate.
   Future<void> dispose();
 }

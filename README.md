@@ -29,16 +29,35 @@ Liked some of my work? Buy me a coffee (or more likely a beer).
 
 -   It's a **single-subscription `Stream`** (i.e., it can only be listened to once).
 
--   The `Stream` emits the **value (nullable)** or **a `TypeError`** as its first event when a listener subscribes.
+-   Listening triggers an initial storage read and applies the supplied decoder.
+    The `Stream` emits the decoded nullable value, or an error if reading or decoding fails.
+    It does not check `containsKey()` first: both a missing key and a stored `null`
+    reach the decoder as `null`, so the decoder can provide a default value.
 
--   It automatically emits a value when the value associated with the key changes successfully
-    (**emits `null`** when the value is removed or set to `null`).
+-   After a successful `write()` or `update()` through the same `RxStorage` wrapper,
+    it emits the original value passed to the write, without reading or decoding it again.
+    It emits `null` after a successful `remove()`, or after `clear()` if the key was
+    returned by the adapter's `readAll()` before clearing. These events bypass the decoder,
+    including any default it supplies for `null`.
 
--   When the value read from storage has a different type than expected:
-    -   If the value is `null`, the `Stream` will **emit `null`** (because `null` can be cast to any nullable type).
-    -   Otherwise, the `Stream` will **emit a `TypeError`**.
+-   Subsequent values incompatible with the observed type produce a `TypeError`.
+    A `null` event is valid for every observed nullable type. The stream does not
+    distinguish a missing key from a null-valued entry; use `containsKey()` when
+    existence matters and the adapter supports retaining null-valued entries.
+
+-   Direct adapter mutations and mutations through other wrappers are not automatically observed.
 
 -   It **can emit** two consecutive data events that are equal. Use an Rx operator such as `distinct` (commonly known as `distinctUntilChanged` in other Rx implementations) to skip data events that are equal to the previous data event.
+
+`observeAll()` also returns a single-subscription stream. It reads all entries when
+listened to and reads them again after each successful mutation through the wrapper.
+Its maps contain stored (encoded) values without decoding; reads can reflect later
+mutations rather than the exact state at the operation that triggered them.
+
+Storage adapters define persistence, durability, null retention, and value-copying
+behavior. The default wrapper serializes `write()`, `remove()`, and `update()` for
+the same key within one wrapper instance. That queue does not serialize reads,
+`clear()`, operations on other keys, direct adapter access, or other wrappers.
 
 ![Stream timeline: subscribing to K1 triggers an initial read, followed by events for K1 changes only.](https://raw.githubusercontent.com/Flutter-Dart-Open-Source/rx_storage/master/screenshots/stream-timeline.png)
 
