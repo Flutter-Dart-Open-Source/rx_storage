@@ -25,9 +25,16 @@
   `RealRxStorage` implementation. Use `update` with named arguments (`key`,
   `decoder`, `transformer`, `encoder`, and optional `options`) instead.
 
+- **Breaking**: `Storage.readAll()` and `RxStorage.observeAll()` now require
+  an `EntryDecoder<Key>` callback and return maps of decoded values. The
+  callback receives both the key and its stored value and supports asynchronous
+  decoding. Pass `(key, raw) => raw` to retain the previous raw-value behavior.
+  Null decoding results retain their keys; removed keys are omitted from maps.
+
 - Add the built-in `InMemoryStorage<Key>` adapter with synchronous and
   asynchronous encoder/decoder support. Encoded null values retain their keys;
-  `remove()` deletes entries, and `readAll()` returns a shallow map copy.
+  `remove()` deletes entries, and `readAll()` decodes a shallow entry
+  snapshot into a new map.
 
 ### Docs
 

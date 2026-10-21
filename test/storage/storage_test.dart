@@ -57,7 +57,7 @@ void main() {
       expect(await rxStorage.getDouble('double'), kTestValues['double']);
       expect(await rxStorage.getStringList('List'), kTestValues['List']);
       expect(await rxStorage.readUser(), user1);
-      expect(await rxStorage.readAll(), kTestValues);
+      expect(await rxStorage.readAll((_, raw) => raw), kTestValues);
 
       // forward error.
       storage.throws = true;
@@ -76,7 +76,7 @@ void main() {
 
       // forward error.
       storage.readAllThrows = true;
-      expect(rxStorage.readAll(), throwsException);
+      expect(rxStorage.readAll((_, raw) => raw), throwsException);
     });
 
     test('writing', () async {

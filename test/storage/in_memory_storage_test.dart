@@ -11,7 +11,8 @@ void main() {
       await storage.write<int>(7, 42, (value) => 'encoded:$value');
 
       expect(await storage.containsKey(7), isTrue);
-      expect(await storage.readAll(), <int, Object?>{7: 'encoded:42'});
+      expect(await storage.readAll((_, raw) => raw),
+          <int, Object?>{7: 'encoded:42'});
       expect(
         await storage.read<int>(
             7, (raw) => int.parse((raw as String).split(':').last)),
@@ -26,12 +27,13 @@ void main() {
 
       expect(await storage.containsKey('key'), isTrue);
       expect(await storage.read<Object>('key', (raw) => raw), isNull);
-      expect(await storage.readAll(), <String, Object?>{'key': null});
+      expect(await storage.readAll((_, raw) => raw),
+          <String, Object?>{'key': null});
 
       await storage.remove('key');
 
       expect(await storage.containsKey('key'), isFalse);
-      expect(await storage.readAll(), isEmpty);
+      expect(await storage.readAll((_, raw) => raw), isEmpty);
       await storage.remove('missing');
       expect(await storage.containsKey('missing'), isFalse);
     });
@@ -43,11 +45,11 @@ void main() {
 
       await storage.clear();
 
-      expect(await storage.readAll(), isEmpty);
+      expect(await storage.readAll((_, raw) => raw), isEmpty);
       expect(await storage.containsKey('first'), isFalse);
       expect(await storage.containsKey('second'), isFalse);
       await storage.clear();
-      expect(await storage.readAll(), isEmpty);
+      expect(await storage.readAll((_, raw) => raw), isEmpty);
     });
 
     test('passes missing values to the decoder without creating an entry',
@@ -59,7 +61,7 @@ void main() {
         42,
       );
       expect(await storage.containsKey('missing'), isFalse);
-      expect(await storage.readAll(), isEmpty);
+      expect(await storage.readAll((_, raw) => raw), isEmpty);
     });
 
     test('passes null input through the encoder', () async {
@@ -68,7 +70,8 @@ void main() {
       await storage.write<int>(
           'key', null, (value) => 'encoded:${value ?? 42}');
 
-      expect(await storage.readAll(), <String, Object?>{'key': 'encoded:42'});
+      expect(await storage.readAll((_, raw) => raw),
+          <String, Object?>{'key': 'encoded:42'});
     });
 
     test('waits for asynchronous encoding and decoding', () async {
@@ -93,7 +96,7 @@ void main() {
     test('readAll returns independent map snapshots', () async {
       final storage = InMemoryStorage<String>();
       await storage.write<int>('first', 1, (value) => value);
-      final snapshot = await storage.readAll();
+      final snapshot = await storage.readAll((_, raw) => raw);
 
       await storage.write<int>('second', 2, (value) => value);
       expect(snapshot, <String, Object?>{'first': 1});
@@ -102,7 +105,7 @@ void main() {
         ..clear()
         ..['injected'] = 3;
       expect(
-        await storage.readAll(),
+        await storage.readAll((_, raw) => raw),
         <String, Object?>{'first': 1, 'second': 2},
       );
     });
@@ -117,7 +120,7 @@ void main() {
           await storage.read<List<int>>('items', (raw) => raw as List<int>?);
       expect(read, same(items));
 
-      final snapshot = await storage.readAll();
+      final snapshot = await storage.readAll((_, raw) => raw);
       expect(snapshot['items'], same(items));
       (snapshot['items'] as List<int>).add(3);
       expect(
@@ -157,7 +160,8 @@ void main() {
         await expectLater(
             storage.write<int>('missing', 2, encoder), throwsA(same(failure)));
 
-        expect(await storage.readAll(), <String, Object?>{'key': 1});
+        expect(await storage.readAll((_, raw) => raw),
+            <String, Object?>{'key': 1});
       });
 
       test('reports $kind decoder failures through the future', () async {
@@ -172,7 +176,8 @@ void main() {
         });
 
         await expectLater(reading, throwsA(same(failure)));
-        expect(await storage.readAll(), <String, Object?>{'key': 1});
+        expect(await storage.readAll((_, raw) => raw),
+            <String, Object?>{'key': 1});
       });
     }
   });

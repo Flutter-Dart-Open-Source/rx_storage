@@ -123,9 +123,16 @@ class FakeStorage implements StringKeyStorage {
       _getValue<Object>(key).then(decoder);
 
   @override
-  Future<Map<String, Object?>> readAll([void _]) => _readAllThrows
-      ? Future.error(Exception('Cannot read all'))
-      : SynchronousFuture(<String, Object?>{..._map});
+  Future<Map<String, Object?>> readAll(EntryDecoder<String> decoder, [void _]) {
+    if (_readAllThrows) {
+      return Future.error(Exception('Cannot read all'));
+    }
+    final entries = <String, Object?>{..._map}.entries;
+    return Future.wait(entries.map((entry) =>
+            Future<Object?>.sync(() => decoder(entry.key, entry.value))
+                .then((value) => MapEntry(entry.key, value))))
+        .then((entries) => Map<String, Object?>.fromEntries(entries));
+  }
 }
 
 final class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
@@ -139,8 +146,8 @@ final class FakeRxStorage extends RealRxStorage<String, void, StringKeyStorage>
   @override
   Future<Map<String, Object?>> reload() {
     return enqueueWritingTask(null, () async {
-      final before =
-          await useStorageWithHandlers((s) => s.readAll(), null, null);
+      final before = await useStorageWithHandlers(
+          (s) => s.readAll((_, raw) => raw), null, null);
 
       return useStorageWithHandlers(
         (s) => s.reload(),

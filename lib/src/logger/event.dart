@@ -81,10 +81,10 @@ final class ReadValueFailureEvent<Key extends Object, Options>
   ReadValueFailureEvent(this.key, this.type, this.error, this.options);
 }
 
-/// Read all values successfully.
+/// All entries were read and decoded successfully.
 final class ReadAllSuccessEvent<Key extends Object, Options>
     implements RxStorageLoggerEvent<Key, Options> {
-  /// All values read from storage.
+  /// All decoded values read from storage.
   final List<KeyAndValue<Key, Object?>> all;
 
   /// The options.
@@ -94,7 +94,7 @@ final class ReadAllSuccessEvent<Key extends Object, Options>
   ReadAllSuccessEvent(this.all, this.options);
 }
 
-/// Read all values failed.
+/// Reading or decoding all entries failed.
 final class ReadAllFailureEvent<Key extends Object, Options>
     implements RxStorageLoggerEvent<Key, Options> {
   /// The error occurred when reading.

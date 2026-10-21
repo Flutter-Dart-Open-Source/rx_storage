@@ -249,11 +249,12 @@ base class RealRxStorage<Key extends Object, Options,
 
   @nonVirtual
   @override
-  Future<Map<Key, Object?>> readAll([Options? options]) {
+  Future<Map<Key, Object?>> readAll(EntryDecoder<Key> decoder,
+      [Options? options]) {
     assert(_debugAssertNotDisposed());
 
     return useStorageWithHandlers(
-      (s) => s.readAll(options),
+      (s) => s.readAll(decoder, options),
       (value, _) {
         if (_isLogEnabled) {
           _publishLog(
@@ -274,7 +275,8 @@ base class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
 
     return _enqueueWritingTask(this, () async {
-      final keys = (await _useStorage((s) => s.readAll(options))).keys;
+      final keys =
+          (await _useStorage((s) => s.readAll((_, raw) => raw, options))).keys;
 
       return await useStorageWithHandlers(
         (s) => s.clear(options),
@@ -392,14 +394,15 @@ base class RealRxStorage<Key extends Object, Options,
 
   @nonVirtual
   @override
-  Stream<Map<Key, Object?>> observeAll([Options? options]) {
+  Stream<Map<Key, Object?>> observeAll(EntryDecoder<Key> decoder,
+      [Options? options]) {
     assert(_debugAssertNotDisposed());
 
     return _keyValuesSubject
         .toSingleSubscriptionStream()
         .mapTo<void>(null)
         .startWith(null)
-        .asyncMap((_) => _useStorage((s) => s.readAll(options)));
+        .asyncMap((_) => _useStorage((s) => s.readAll(decoder, options)));
   }
 
   @nonVirtual

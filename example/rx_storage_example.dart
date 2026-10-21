@@ -12,6 +12,9 @@ Future<void> main() async {
     rxStorage
         .observe(key, (v) => v as String?)
         .listen((String? s) => print('[Observe 2] Value: $s'));
+    rxStorage
+        .observeAll((key, raw) => raw == null ? null : '$key=$raw')
+        .listen((values) => print('[Observe all] Values: $values'));
 
     await Future<void>.delayed(const Duration(milliseconds: 1));
     print('--- START ---');
@@ -22,6 +25,9 @@ Future<void> main() async {
 
     await rxStorage.write(key, '<<2>>', (v) => v);
     print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
+    print('Read all: ${await rxStorage.readAll(
+      (_, raw) => raw as String?,
+    )}');
     print('-' * 80);
 
     await rxStorage.remove(key);

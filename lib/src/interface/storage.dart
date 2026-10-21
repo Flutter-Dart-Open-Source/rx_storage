@@ -11,6 +11,13 @@ typedef Encoder<T> = FutureOr<Object?> Function(T t);
 /// A null input can represent either a missing key or a stored null value.
 typedef Decoder<T> = FutureOr<T> Function(Object? o);
 
+/// Converts a stored entry's value, with its key available to select a codec.
+///
+/// Used by [Storage.readAll]. Conversion may be synchronous or asynchronous.
+/// Only existing entries are decoded; a stored null value is passed as null.
+typedef EntryDecoder<Key extends Object> = FutureOr<Object?> Function(
+    Key key, Object? value);
+
 /// An asynchronous key-value storage interface.
 ///
 /// Adapters define the backing store, supported encoded values, and the meaning
@@ -35,11 +42,21 @@ abstract interface class Storage<Key extends Object, Options> {
   Future<T?> read<T extends Object>(Key key, Decoder<T?> decoder,
       [Options? options]);
 
-  /// Returns all entries as a map of keys to their stored representations.
+  /// Reads all entries and converts each stored value with [decoder].
   ///
-  /// Values are encoded values; no [Decoder] is applied. Map mutability and
-  /// copying of contained values depend on the adapter.
-  Future<Map<Key, Object?>> readAll([Options? options]);
+  /// The decoder receives both the key and its stored representation, allowing
+  /// different codecs for different keys. Only existing keys are included.
+  /// Stored null values are passed to [decoder], and a null decoding result
+  /// retains the key in the returned map.
+  ///
+  /// Reading or decoding failures complete the future with an error; no partial
+  /// result is returned. Decoder side effects are not rolled back. Callback
+  /// scheduling and value copying depend on the adapter.
+  ///
+  /// Decoded values may have different types. To read stored representations,
+  /// use `readAll((_, raw) => raw)`.
+  Future<Map<Key, Object?>> readAll(EntryDecoder<Key> decoder,
+      [Options? options]);
 
   /// Removes all entries in the storage scope selected by [options].
   ///
