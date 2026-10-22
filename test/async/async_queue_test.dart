@@ -68,6 +68,91 @@ void main() {
       );
     });
 
+    for (final asynchronous in <bool>[false, true]) {
+      final kind = asynchronous ? 'asynchronous' : 'synchronous';
+
+      test('releases an idle queue after $kind task failure', () async {
+        final idle = Completer<void>();
+        final queue = AsyncQueue<int>(
+          key: 'key',
+          timeout: const Duration(milliseconds: 20),
+          onTimeout: idle.complete,
+        );
+        addTearDown(queue.dispose);
+        final failure = StateError('Cannot execute');
+
+        await expectLater(
+          queue.enqueue(() {
+            if (asynchronous) {
+              return Future<int>.error(failure);
+            }
+            throw failure;
+          }),
+          throwsA(same(failure)),
+        );
+        expect(await queue.enqueue(() => Future.value(42)), 42);
+        await idle.future.timeout(const Duration(seconds: 1));
+      });
+    }
+
+    test('disposal rejects queued tasks and lets the active task finish',
+        () async {
+      final started = Completer<void>();
+      final release = Completer<int>();
+      final queue = AsyncQueue<int>(
+        key: 'key',
+        timeout: timeout,
+        onTimeout: () {},
+      );
+      final active = queue.enqueue(() {
+        started.complete();
+        return release.future;
+      });
+      await started.future;
+      var pendingRan = false;
+      final rejected = expectLater(
+        queue.enqueue(() async {
+          pendingRan = true;
+          return 2;
+        }).timeout(const Duration(seconds: 1)),
+        throwsStateError,
+      );
+
+      try {
+        await queue.dispose();
+        await rejected;
+        expect(pendingRan, isFalse);
+      } finally {
+        release.complete(1);
+        expect(await active, 1);
+      }
+    });
+
+    test('disposal before execution rejects every pending task', () async {
+      final queue = AsyncQueue<int>(
+        key: 'key',
+        timeout: timeout,
+        onTimeout: () {},
+      );
+      var ran = false;
+      final rejected = List.generate(
+        3,
+        (index) => expectLater(
+          queue.enqueue(() async {
+            ran = true;
+            return index;
+          }).timeout(const Duration(seconds: 1)),
+          throwsStateError,
+        ),
+      );
+
+      final disposing = queue.dispose();
+      expect(queue.dispose(), same(disposing));
+      await disposing;
+      await Future.wait(rejected);
+      expect(ran, isFalse);
+    });
+
     test('onTimeout is called when timeout occurred', () async {
       var count = 0;
 

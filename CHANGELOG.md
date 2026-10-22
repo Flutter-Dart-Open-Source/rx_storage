@@ -36,6 +36,17 @@
   `remove()` deletes entries, and `readAll()` decodes a shallow entry
   snapshot into a new map.
 
+### Fixes
+
+- Reject queued writes with `StateError` on disposal instead of leaving their
+  futures pending. Started operations can finish without further notifications
+  or logs.
+- Retain asynchronous adapter initialization failures for later operations
+  without emitting an uncaught error before the first operation starts.
+- Run external disposal cleanup at most once and share its result across
+  concurrent and repeated `dispose()` calls.
+- Release idle write queues after synchronous task failures.
+
 ### Docs
 
 - Clarify the README and illustrate stream emissions with a timeline diagram.

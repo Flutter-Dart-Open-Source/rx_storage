@@ -6,6 +6,7 @@ import 'perf.dart' as perf;
 import 'storage/decoded_storage_test.dart' as decoded_storage_test;
 import 'storage/in_memory_rx_storage_test.dart' as in_memory_rx_storage_test;
 import 'storage/in_memory_storage_test.dart' as in_memory_storage_test;
+import 'storage/lifecycle_test.dart' as lifecycle_test;
 import 'storage/storage_test.dart' as storage_test;
 import 'storage/streams_test.dart' as streams_test;
 
@@ -26,6 +27,7 @@ void main() async {
   decoded_storage_test.main();
   in_memory_storage_test.main();
   in_memory_rx_storage_test.main();
+  lifecycle_test.main();
   storage_test.main();
   streams_test.main();
 }

@@ -31,6 +31,7 @@ base class RealRxStorage<Key extends Object, Options,
   final _writeQueueResources = <Object, AsyncQueue<Object?>>{};
 
   final _disposeMemo = AsyncMemoizer<void>();
+  var _isDisposing = false;
   late final _bag =
       DisposeBag(const <Object>[], '( RealRxStorage ~ ${shortHash(this)} )');
 
@@ -56,6 +57,9 @@ base class RealRxStorage<Key extends Object, Options,
         assert(_storage is! RxStorage<Key, Options>);
         return _storage = value;
       });
+      // Retain failures for later operations without leaking an uncaught error
+      // when initialization fails before the first operation starts.
+      _storageFuture.ignore();
     } else {
       _storage = storageOrFuture;
       assert(_storage is! RxStorage<Key, Options>);
@@ -83,10 +87,13 @@ base class RealRxStorage<Key extends Object, Options,
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  bool get _isLogEnabled => _loggerEventController != null;
+  bool get _isLogEnabled => !_isDisposing && _loggerEventController != null;
 
   /// Crash if [_loggerEventController] is null.
   void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
+    if (_isDisposing) {
+      return;
+    }
     assert(_debugAssertNotDisposed());
 
     _loggerEventController!.add(event);
@@ -94,7 +101,7 @@ base class RealRxStorage<Key extends Object, Options,
 
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_bag.isClearing || _bag.isDisposed) {
+      if (_isDisposing || _bag.isClearing || _bag.isDisposed) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }
@@ -108,6 +115,8 @@ base class RealRxStorage<Key extends Object, Options,
       _storage?.let(block) ?? _storageFuture.then(block);
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
+    assert(_debugAssertNotDisposed());
+
     return _writeQueueResources
         .putIfAbsent(
           key,
@@ -159,8 +168,8 @@ base class RealRxStorage<Key extends Object, Options,
     FutureOr<void> Function(R, S)? onSuccess,
     FutureOr<void> Function(RxStorageError, S)? onFailure,
   ) async {
-    assert(_debugAssertNotDisposed());
-
+    // Disposal is checked at the entry point. A queued task that has already
+    // started can reach this helper again after disposal (for example, update).
     final storage = _storage ?? await _storageFuture;
     if (onSuccess == null && onFailure == null) {
       return await block(storage);
@@ -186,6 +195,9 @@ base class RealRxStorage<Key extends Object, Options,
   @protected
   @nonVirtual
   void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
+    if (_isDisposing) {
+      return;
+    }
     assert(_debugAssertNotDisposed());
 
     try {
@@ -408,15 +420,16 @@ base class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   @override
   Future<void> dispose() {
-    assert(_debugAssertNotDisposed());
-
-    Future<void> dispose() =>
-        Future.wait(_writeQueueResources.values.map((q) => q.dispose()))
-            .then((_) => _writeQueueResources.clear())
-            .then((_) => _bag.dispose());
-    final future = _disposeMemo.runOnce(dispose);
-    return _onDispose?.let((onDispose) => future.then((_) => onDispose())) ??
-        future;
+    if (_isDisposing) {
+      return _disposeMemo.future;
+    }
+    _isDisposing = true;
+    return _disposeMemo.runOnce(() async {
+      await Future.wait(_writeQueueResources.values.map((q) => q.dispose()));
+      _writeQueueResources.clear();
+      await _bag.dispose();
+      _onDispose?.call();
+    });
   }
 }
 
