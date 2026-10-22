@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:rx_storage/rx_storage.dart';
 import 'package:test/test.dart';
 
+import '../fake_storage.dart';
+
 void main() {
   group('RxStorage lifecycle', () {
     test('concurrent and repeated disposal runs external cleanup once',
@@ -136,6 +138,45 @@ void main() {
     for (final succeeds in <bool>[true, false]) {
       final outcome = succeeds ? 'success' : 'failure';
 
+      test('subclass logging after disposal preserves active reload $outcome',
+          () async {
+        final adapter = _ControlledReloadStorage();
+        final logger = _RecordingReloadLogger();
+        final storage = FakeRxStorage(adapter, logger);
+        final values = <String, Object?>{'key': 2};
+        final failure = StateError('Cannot reload');
+        final result = expectLater(
+          storage.reload(),
+          succeeds ? completion(same(values)) : throwsA(same(failure)),
+        );
+        await adapter.started.future;
+
+        try {
+          await storage.dispose();
+          final logCount = logger.events.length;
+          if (succeeds) {
+            adapter.result.complete(values);
+          } else {
+            adapter.result.completeError(failure);
+          }
+          await result;
+          expect(logger.events, hasLength(logCount));
+        } finally {
+          if (!adapter.result.isCompleted) {
+            if (succeeds) {
+              adapter.result.complete(values);
+            } else {
+              adapter.result.completeError(failure);
+            }
+          }
+          await result;
+        }
+      });
+    }
+
+    for (final succeeds in <bool>[true, false]) {
+      final outcome = succeeds ? 'success' : 'failure';
+
       test('disposal rejects queued writes and preserves active write $outcome',
           () async {
         final adapter = InMemoryStorage<String>();
@@ -204,6 +245,26 @@ void main() {
       });
     }
   });
+}
+
+final class _ControlledReloadStorage extends FakeStorage {
+  final started = Completer<void>();
+  final result = Completer<Map<String, Object?>>();
+
+  _ControlledReloadStorage() : super(<String, Object?>{'key': 1});
+
+  @override
+  Future<Map<String, Object?>> reload() {
+    started.complete();
+    return result.future;
+  }
+}
+
+final class _RecordingReloadLogger implements FakeLogger {
+  final events = <RxStorageLoggerEvent<String, void>>[];
+
+  @override
+  void log(RxStorageLoggerEvent<String, void> event) => events.add(event);
 }
 
 final class _RecordingLogger implements RxStorageLogger<String, void> {

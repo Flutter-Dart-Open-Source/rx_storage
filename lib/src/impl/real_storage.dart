@@ -212,6 +212,9 @@ base class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void logIfEnabled(
       RxStorageLoggerEvent<Key, Options> Function() eventProducer) {
+    if (_isDisposing) {
+      return;
+    }
     assert(_debugAssertNotDisposed());
 
     if (_isLogEnabled) {
