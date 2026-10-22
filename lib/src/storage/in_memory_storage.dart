@@ -6,7 +6,7 @@ import '../interface/storage.dart';
 /// [Encoder]. Encoded null values retain their keys; [remove] deletes entries.
 /// Data is not persisted between application runs.
 ///
-/// [readAll] captures a shallow map copy before invoking its decoders.
+/// [readAll] captures a shallow entry snapshot before invoking its decoders.
 /// Entry decoders may run concurrently. Stored objects are kept by reference,
 /// without cloning on write or read; decoders may choose to copy them. Mutating
 /// stored objects directly does not notify an `RxStorage` wrapper.
@@ -30,7 +30,7 @@ final class InMemoryStorage<Key extends Object> implements Storage<Key, void> {
 
   @override
   Future<Map<Key, Object?>> readAll(EntryDecoder<Key> decoder, [void options]) {
-    final entries = Map<Key, Object?>.of(_map).entries;
+    final entries = _map.entries.toList(growable: false);
     return Future.wait(entries.map((entry) =>
             Future<Object?>.sync(() => decoder(entry.key, entry.value))
                 .then((value) => MapEntry(entry.key, value))))

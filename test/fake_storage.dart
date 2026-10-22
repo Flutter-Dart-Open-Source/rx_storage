@@ -127,7 +127,7 @@ class FakeStorage implements StringKeyStorage {
     if (_readAllThrows) {
       return Future.error(Exception('Cannot read all'));
     }
-    final entries = <String, Object?>{..._map}.entries;
+    final entries = _map.entries.toList(growable: false);
     return Future.wait(entries.map((entry) =>
             Future<Object?>.sync(() => decoder(entry.key, entry.value))
                 .then((value) => MapEntry(entry.key, value))))

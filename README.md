@@ -75,7 +75,7 @@ persisting it between application runs.
 -   Encoders and decoders can be synchronous or asynchronous.
 -   Encoded `null` values retain their keys: `containsKey()` returns `true` until
     the key is removed with `remove()` or the storage is cleared.
--   `readAll()` captures a shallow map copy and decodes its entries into a
+-   `readAll()` captures a shallow entry snapshot and decodes its entries into a
     new map. Stored objects are kept by reference; the decoder can choose to copy
     them. Mutating a stored object directly does not trigger stream events.
 
