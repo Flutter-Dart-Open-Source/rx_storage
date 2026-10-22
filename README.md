@@ -49,10 +49,15 @@ Liked some of my work? Buy me a coffee (or more likely a beer).
 
 -   It **can emit** two consecutive data events that are equal. Use an Rx operator such as `distinct` (commonly known as `distinctUntilChanged` in other Rx implementations) to skip data events that are equal to the previous data event.
 
-`observeAll()` also returns a single-subscription stream. It reads all entries when
-listened to and reads them again after each successful mutation through the wrapper.
-Its maps contain stored (encoded) values without decoding; reads can reflect later
-mutations rather than the exact state at the operation that triggered them.
+`observeAll(decoder)` also returns a single-subscription stream. It reads
+all entries when listened to and after each successful mutation through the wrapper.
+Every read applies the entry decoder to each key and stored value. Decoding may be
+asynchronous; maps are emitted in read order, and read or decoding failures become
+stream errors. Reads can reflect later mutations rather than the exact state at the
+operation that triggered them.
+
+Only existing entries are decoded. A null decoding result keeps its key in the
+map; removed keys are omitted, and empty storage emits an empty map.
 
 Storage adapters define persistence, durability, null retention, and value-copying
 behavior. The default wrapper serializes `write()`, `remove()`, and `update()` for
@@ -70,12 +75,13 @@ persisting it between application runs.
 -   Encoders and decoders can be synchronous or asynchronous.
 -   Encoded `null` values retain their keys: `containsKey()` returns `true` until
     the key is removed with `remove()` or the storage is cleared.
--   `readAll()` returns a shallow map copy. Stored objects are kept by reference,
-    without cloning on write or read. Mutating a stored object directly does not
-    trigger stream events.
+-   `readAll()` captures a shallow entry snapshot and decodes its entries into a
+    new map. Stored objects are kept by reference; the decoder can choose to copy
+    them. Mutating a stored object directly does not trigger stream events.
 
-In this complete example, both observers receive `null`, `<<1>>`, `<<2>>`, then
-`null` after the key is removed.
+In this complete example, both per-key observers receive `null`, `<<1>>`, `<<2>>`,
+then `null` after the key is removed. The bulk observer emits maps whose values
+are decoded with both the key and its stored value.
 
 Run [the example](https://github.com/Flutter-Dart-Open-Source/rx_storage/blob/master/example/rx_storage_example.dart) from the repository root:
 
@@ -98,6 +104,9 @@ Future<void> main() async {
     rxStorage
         .observe(key, (v) => v as String?)
         .listen((String? s) => print('[Observe 2] Value: $s'));
+    rxStorage
+        .observeAll((key, raw) => raw == null ? null : '$key=$raw')
+        .listen((values) => print('[Observe all] Values: $values'));
 
     await Future<void>.delayed(const Duration(milliseconds: 1));
     print('--- START ---');
@@ -108,6 +117,9 @@ Future<void> main() async {
 
     await rxStorage.write(key, '<<2>>', (v) => v);
     print('Read: ${await rxStorage.read(key, (v) => v as String?)}');
+    print('Read all: ${await rxStorage.readAll(
+      (_, raw) => raw as String?,
+    )}');
     print('-' * 80);
 
     await rxStorage.remove(key);
@@ -120,6 +132,34 @@ Future<void> main() async {
   }
 }
 ```
+
+## Migrating bulk reads to 4.0.0
+
+`readAll()` and `observeAll()` now require an `EntryDecoder<Key>`, which receives
+each existing key and its stored value. Both methods return `Map<Key, Object?>`
+values after decoding, allowing different decoded types in the same map:
+
+```dart
+final values = await storage.readAll(
+  (key, raw) => raw == null ? null : int.parse(raw as String),
+);
+final changes = storage.observeAll(
+  (key, raw) => raw == null ? null : int.parse(raw as String),
+);
+```
+
+Different codecs can be selected by key. To keep the previous raw-value behavior,
+pass an identity decoder:
+
+```dart
+final raw = await storage.readAll((_, raw) => raw);
+final rawChanges = storage.observeAll((_, raw) => raw);
+```
+
+Custom adapters must implement `readAll()`, including synchronous and
+asynchronous entry decoding. Custom reactive implementations must also implement
+`observeAll()`. Both methods retain keys whose decoder returns null and
+report decoding failures through their returned future or stream.
 
 ## Features and bugs
 

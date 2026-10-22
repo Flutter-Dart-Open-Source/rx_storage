@@ -3,6 +3,7 @@ import 'logger/default_logger_test.dart' as default_logger_test;
 import 'logger/logger_adapter_test.dart' as logger_adapter_test;
 import 'model/key_and_value_test.dart' as key_and_value_test;
 import 'perf.dart' as perf;
+import 'storage/decoded_storage_test.dart' as decoded_storage_test;
 import 'storage/in_memory_rx_storage_test.dart' as in_memory_rx_storage_test;
 import 'storage/in_memory_storage_test.dart' as in_memory_storage_test;
 import 'storage/storage_test.dart' as storage_test;
@@ -22,6 +23,7 @@ void main() async {
   key_and_value_test.main();
 
   // storage tests
+  decoded_storage_test.main();
   in_memory_storage_test.main();
   in_memory_rx_storage_test.main();
   storage_test.main();

@@ -46,7 +46,7 @@ void main() {
           await storage.clear();
         },
       );
-      expect(await storage.readAll(), isEmpty);
+      expect(await storage.readAll((_, raw) => raw), isEmpty);
     });
 
     test('observe applies decoder defaults only to the initial read', () async {
@@ -66,7 +66,7 @@ void main() {
     test('observeAll emits an empty map initially and encoded values on write',
         () async {
       await _expectChanges(
-        storage.observeAll(),
+        storage.observeAll((_, raw) => raw),
         <Object?>[
           <String, Object?>{},
           <String, Object?>{'key': 'encoded:1'},
@@ -77,7 +77,7 @@ void main() {
 
     test('observeAll includes null-valued entries', () async {
       await _expectChanges(
-        storage.observeAll(),
+        storage.observeAll((_, raw) => raw),
         <Object?>[
           <String, Object?>{},
           <String, Object?>{'key': null},
@@ -91,7 +91,7 @@ void main() {
       await storage.write<int>('remove', null, (value) => value);
 
       await _expectChanges(
-        storage.observeAll(),
+        storage.observeAll((_, raw) => raw),
         <Object?>[
           <String, Object?>{'keep': 1, 'remove': null},
           <String, Object?>{'keep': 1},
@@ -104,7 +104,7 @@ void main() {
       await storage.write<int>('key', 1, (value) => value);
 
       await _expectChanges(
-        storage.observeAll(),
+        storage.observeAll((_, raw) => raw),
         <Object?>[
           <String, Object?>{'key': 1},
           <String, Object?>{},
@@ -115,7 +115,7 @@ void main() {
 
     test('observeAll emits encoded values after update', () async {
       await _expectChanges(
-        storage.observeAll(),
+        storage.observeAll((_, raw) => raw),
         <Object?>[
           <String, Object?>{},
           <String, Object?>{'key': 'encoded:1'},
@@ -126,6 +126,86 @@ void main() {
           transformer: (value) => (value ?? 0) + 1,
           encoder: (value) => 'encoded:$value',
         ),
+      );
+    });
+
+    test('observeAll decodes the initial and subsequent maps', () async {
+      await storage.write<int>('key', 1, (value) => 'encoded:$value');
+
+      await _expectChanges(
+        storage.observeAll((key, raw) => Future<String?>.value('$key=$raw')),
+        <Object?>[
+          <String, String?>{'key': 'key=encoded:1'},
+          <String, String?>{'key': 'key=encoded:2'},
+        ],
+        () => storage.write<int>('key', 2, (value) => 'encoded:$value'),
+      );
+    });
+
+    test('observeAll omits cleared keys instead of decoding them as null',
+        () async {
+      await storage.write<int>('key', null, (value) => value);
+
+      await _expectChanges(
+        storage.observeAll((_, raw) => raw as int? ?? 42),
+        <Object?>[
+          <String, int?>{'key': 42},
+          <String, int?>{},
+        ],
+        storage.clear,
+      );
+    });
+
+    test('observeAll preserves map order while an initial decoder is pending',
+        () async {
+      await storage.write<int>('key', 0, (value) => value);
+      final started = Completer<void>();
+      final initialValue = Completer<Object?>();
+      final expectation = expectLater(
+        storage.observeAll((_, raw) {
+          if (raw == 0) {
+            started.complete();
+            return initialValue.future;
+          }
+          return raw;
+        }),
+        emitsInOrder(<Object?>[
+          <String, Object?>{'key': 0},
+          <String, Object?>{'key': 1},
+        ]),
+      );
+
+      await started.future;
+      await storage.write<int>('key', 1, (value) => value);
+      // Let the later change queue while the initial decoder is still pending.
+      await Future<void>(() {});
+      initialValue.complete(0);
+      await expectation;
+    });
+
+    test('observeAll emits decoding errors and recovers on later changes',
+        () async {
+      final failure = FormatException('Cannot decode');
+      final failedDecode = Completer<void>();
+
+      await _expectChanges(
+        storage.observeAll((_, raw) {
+          if (raw == 'bad') {
+            failedDecode.complete();
+            return Future<int?>.error(failure);
+          }
+          return int.parse(raw as String);
+        }),
+        <Object?>[
+          <String, int?>{},
+          emitsError(same(failure)),
+          <String, int?>{'key': 42},
+        ],
+        () async {
+          await storage.write<String>('key', 'bad', (value) => value);
+          await failedDecode.future;
+          await storage.write<int>('key', 42, (value) => '$value');
+        },
       );
     });
 
@@ -169,7 +249,8 @@ void main() {
             ),
             throwsA(same(failure)),
           );
-          expect(await storage.readAll(), <String, Object?>{'key': 1});
+          expect(await storage.readAll((_, raw) => raw),
+              <String, Object?>{'key': 1});
           await storage.write<int>('key', 3, (value) => value);
         },
       );

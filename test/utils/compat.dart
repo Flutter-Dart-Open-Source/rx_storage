@@ -40,7 +40,7 @@ extension RxCompatExtensions on RxStorage<String, void> {
   /// Return [Stream] that will emit all keys read from persistent storage.
   /// It will automatic emit all keys when any value was changed.
   Stream<Set<String>> getKeysStream() =>
-      observeAll().map((event) => event.keys.toSet());
+      observeAll((_, raw) => raw).map((event) => event.keys.toSet());
 }
 
 extension CompatExtensions on Storage<String, void> {
@@ -62,7 +62,7 @@ extension CompatExtensions on Storage<String, void> {
 
   /// Returns all keys in the persistent storage.
   Future<Set<String>> getKeys() =>
-      readAll().then((value) => value.keys.toSet());
+      readAll((_, raw) => raw).then((value) => value.keys.toSet());
 
   /// Reads a value from persistent storage, return a future that completes
   /// with an error if it's not a String.

@@ -39,8 +39,8 @@ abstract interface class RxStorage<Key extends Object, Options>
   /// After a successful [write] or [update] through this wrapper, the stream emits
   /// the original value passed to the write, without reading or decoding it again.
   /// A successful [remove] emits null. A successful [clear] emits null for keys
-  /// returned by the adapter's [Storage.readAll] before clearing. These null events
-  /// bypass [decoder], even if it supplies a default for the initial read.
+  /// returned by [Storage.readAll] before clearing. These events bypass
+  /// [decoder], even if it supplies a default for the initial read.
   ///
   /// Read and decoding failures, and subsequent values incompatible with [T],
   /// are emitted as stream errors. Equal consecutive values are not filtered;
@@ -48,16 +48,22 @@ abstract interface class RxStorage<Key extends Object, Options>
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options options]);
 
-  /// Returns a single-subscription stream of all stored entries.
+  /// Returns a single-subscription stream of all decoded entries.
   ///
-  /// Listening triggers an initial [Storage.readAll] using [options]. Every
-  /// successful [write], [update], [remove], or [clear] through this wrapper
-  /// triggers another read, even if the resulting entries are unchanged.
+  /// Listening triggers an initial [Storage.readAll] with [decoder] and
+  /// [options]. Every successful [write], [update], [remove], or [clear] through
+  /// this wrapper triggers another read, even if the entries are unchanged.
   ///
-  /// Map values are stored representations; no [Decoder] is applied. Each
-  /// emission reflects the read when it runs, rather than a snapshot captured at
-  /// the mutation. Read failures are emitted as stream errors.
-  Stream<Map<Key, Object?>> observeAll([Options options]);
+  /// Every read applies [decoder] to each existing entry, including null-valued
+  /// entries. Removed keys are omitted, and empty storage emits an empty map.
+  /// Reads and their asynchronous decoding complete in stream order. Each
+  /// emission reflects the read when it runs, rather than the exact state at the
+  /// mutation. Read or decoding failures are emitted as stream errors.
+  ///
+  /// To observe stored representations, use
+  /// `observeAll((_, raw) => raw)`.
+  Stream<Map<Key, Object?>> observeAll(EntryDecoder<Key> decoder,
+      [Options? options]);
 
   /// Releases this wrapper's stream, logger, and write-queue resources.
   ///
