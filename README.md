@@ -148,9 +148,10 @@ An `update()` reads, decodes, transforms, encodes, then writes in that queue.
 The queue excludes reads, `clear()`, other keys, direct adapter access, and other
 wrappers. It provides no multi-key transactions. `update()` is experimental.
 
-Await required writes before `dispose()`. Disposal discards tasks that have not
-started and releases wrapper resources. Stored data and adapter resources remain.
-Do not use the wrapper afterward.
+Await required writes before `dispose()`. Pending tasks fail with `StateError`.
+Started operations can finish without further notifications or logs. Repeated
+disposal shares one result and runs external cleanup at most once. Stored data
+and adapter resources remain. Do not use the wrapper afterward.
 
 ## 5. Migrating to 4.0.0
 
@@ -166,6 +167,11 @@ final rawChanges = storage.observeAll((_, raw) => raw);
 Custom adapters must support synchronous and asynchronous entry decoding in
 `readAll()`. Custom reactive implementations must also implement `observeAll()`.
 Both retain null decoding results and report failures through the future or stream.
+
+Also replace `executeUpdate()` with named-argument `update()`. Dart 3 class
+modifiers now restrict inheritance and implementation. See the
+[changelog](https://github.com/Flutter-Dart-Open-Source/rx_storage/blob/master/CHANGELOG.md)
+for all breaking changes.
 
 ## 6. Links and support
 

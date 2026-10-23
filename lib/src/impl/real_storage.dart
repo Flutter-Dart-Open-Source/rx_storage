@@ -56,6 +56,9 @@ base class RealRxStorage<Key extends Object, Options,
         assert(_storage is! RxStorage<Key, Options>);
         return _storage = value;
       });
+      // Retain failures for later operations without leaking an uncaught error
+      // when initialization fails before the first operation starts.
+      _storageFuture.ignore();
     } else {
       _storage = storageOrFuture;
       assert(_storage is! RxStorage<Key, Options>);
@@ -83,23 +86,35 @@ base class RealRxStorage<Key extends Object, Options,
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  bool get _isLogEnabled => _loggerEventController != null;
+  bool get _isDisposing => _disposeMemo.hasRun;
 
-  /// Crash if [_loggerEventController] is null.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  bool get _isLogEnabled => !_isDisposing && _loggerEventController != null;
+
+  /// Publishes an event.
   void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
-    assert(_debugAssertNotDisposed());
+    assert(() {
+      if (!_isLogEnabled) {
+        throw StateError(
+          'Logging is not enabled. Please check _isLogEnabled before calling _publishLog.',
+        );
+      }
+      return true;
+    }());
 
     _loggerEventController!.add(event);
   }
 
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_bag.isClearing || _bag.isDisposed) {
+      if (_isDisposing) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }
       return true;
     }());
+
     return true;
   }
 
@@ -108,6 +123,8 @@ base class RealRxStorage<Key extends Object, Options,
       _storage?.let(block) ?? _storageFuture.then(block);
 
   Future<T> _enqueueWritingTask<T>(Object key, AsyncQueueBlock<T> block) {
+    assert(_debugAssertNotDisposed());
+
     return _writeQueueResources
         .putIfAbsent(
           key,
@@ -159,8 +176,8 @@ base class RealRxStorage<Key extends Object, Options,
     FutureOr<void> Function(R, S)? onSuccess,
     FutureOr<void> Function(RxStorageError, S)? onFailure,
   ) async {
-    assert(_debugAssertNotDisposed());
-
+    // Disposal is checked at the entry point. A queued task that has already
+    // started can reach this helper again after disposal (for example, update).
     final storage = _storage ?? await _storageFuture;
     if (onSuccess == null && onFailure == null) {
       return await block(storage);
@@ -186,7 +203,9 @@ base class RealRxStorage<Key extends Object, Options,
   @protected
   @nonVirtual
   void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
-    assert(_debugAssertNotDisposed());
+    if (_isDisposing) {
+      return;
+    }
 
     try {
       _keyValuesSubject.add(map);
@@ -200,10 +219,14 @@ base class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void logIfEnabled(
       RxStorageLoggerEvent<Key, Options> Function() eventProducer) {
-    assert(_debugAssertNotDisposed());
+    if (!_isLogEnabled) {
+      return;
+    }
 
+    final event = eventProducer();
+    // The producer can synchronously dispose this storage.
     if (_isLogEnabled) {
-      _publishLog(eventProducer());
+      _publishLog(event);
     }
   }
 
@@ -384,11 +407,14 @@ base class RealRxStorage<Key extends Object, Options,
         .asyncMap<T?>(convert);
 
     return _isLogEnabled
-        ? stream
-            .doOnData((value) =>
-                _publishLog(OnDataStreamEvent(KeyAndValue(key, value, T))))
-            .doOnError(
-                (e, s) => _publishLog(OnErrorStreamEvent(RxStorageError(e, s))))
+        ? stream.doOn(
+            data: (value) => _isLogEnabled
+                ? _publishLog(OnDataStreamEvent(KeyAndValue(key, value, T)))
+                : null,
+            error: (e, s) => _isLogEnabled
+                ? _publishLog(OnErrorStreamEvent(RxStorageError(e, s)))
+                : null,
+          )
         : stream;
   }
 
@@ -407,17 +433,14 @@ base class RealRxStorage<Key extends Object, Options,
 
   @nonVirtual
   @override
-  Future<void> dispose() {
-    assert(_debugAssertNotDisposed());
-
-    Future<void> dispose() =>
-        Future.wait(_writeQueueResources.values.map((q) => q.dispose()))
+  Future<void> dispose() => _disposeMemo.runOnce(
+        () => Future.wait([
+          _bag.dispose(),
+          ..._writeQueueResources.values.map((q) => q.dispose())
+        ])
             .then((_) => _writeQueueResources.clear())
-            .then((_) => _bag.dispose());
-    final future = _disposeMemo.runOnce(dispose);
-    return _onDispose?.let((onDispose) => future.then((_) => onDispose())) ??
-        future;
-  }
+            .then((_) => _onDispose?.call()),
+      );
 }
 
 /// Scope function extension

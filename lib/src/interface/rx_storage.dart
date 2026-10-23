@@ -14,9 +14,12 @@ abstract interface class RxStorage<Key extends Object, Options>
     implements TransactionalStorage<Key, Options> {
   /// Wraps a [Storage], or a future that resolves to one, in a [RealRxStorage].
   ///
-  /// Operations wait for [storageOrFuture] to resolve when necessary. If provided,
-  /// [logger] receives operation and stream events, and [onDispose] is called
-  /// after the wrapper releases its resources.
+  /// Operations wait for [storageOrFuture] to resolve when necessary.
+  /// Initialization failures are retained for operations, including when
+  /// initialization fails before the first operation starts.
+  ///
+  /// If provided, [logger] receives operation and stream events. [onDispose]
+  /// runs at most once, after the wrapper releases its resources.
   factory RxStorage(
     FutureOr<Storage<Key, Options>> storageOrFuture, [
     RxStorageLogger<Key, Options>? logger,
@@ -68,9 +71,12 @@ abstract interface class RxStorage<Key extends Object, Options>
   /// Releases this wrapper's stream, logger, and write-queue resources.
   ///
   /// Call this when the wrapper is no longer needed, and do not use it afterward.
-  /// Queued writing tasks that have not started are discarded, so await writes
-  /// that must finish before disposing. Disposal does not roll back storage
-  /// operations that have already started.
+  /// Queued writing tasks that have not started complete with a [StateError],
+  /// so await writes that must finish before disposing. Storage operations that
+  /// have already started can finish after disposal, without further change
+  /// notifications or log events. Disposal does not roll back those operations.
+  ///
+  /// Repeated calls return the same future, including any cleanup error.
   ///
   /// This method does not clear the adapter's data or release resources owned by
   /// the adapter. The caller is responsible for any cleanup the adapter requires.
