@@ -26,9 +26,10 @@ final class AsyncQueue<T> {
   final _pendingEntries = <_AsyncQueueEntry<T>>{};
   late final DisposeBag _bag;
   Future<void>? _disposeFuture;
-  var _isDisposed = false;
 
   final _countS = StateSubject<int>(0, sync: true);
+
+  bool get _isDisposing => _disposeFuture != null || _bag.isClearing;
 
   /// Construct an [AsyncQueue].
   AsyncQueue({
@@ -60,20 +61,16 @@ final class AsyncQueue<T> {
       onTimeout();
     }).disposedBy(_bag);
 
-    Future<T> executeBlock(_AsyncQueueEntry<T> entry) async {
+    Future<void> executeBlock(_AsyncQueueEntry<T> entry) {
       _pendingEntries.remove(entry);
-      try {
-        final value = await entry.block();
-        entry.completer.complete(value);
-        return value;
-      } catch (e, s) {
-        entry.completer.completeError(e, s);
-        rethrow;
-      } finally {
-        if (!_isDisposed) {
+      return Future<T>.sync(entry.block)
+          .then<void>(entry.completer.complete)
+          .onError<Object>(entry.completer.completeError)
+          .whenComplete(() {
+        if (!_isDisposing) {
           _countS.value = _countS.value - 1;
         }
-      }
+      });
     }
 
     _blockS.stream
@@ -91,22 +88,20 @@ final class AsyncQueue<T> {
       return disposing;
     }
 
-    _isDisposed = true;
     final future = _disposeFuture = _bag.dispose();
-    final pending = _pendingEntries.toList(growable: false);
-    _pendingEntries.clear();
-    for (final entry in pending) {
+    for (final entry in _pendingEntries) {
       entry.completer.completeError(
         StateError('AsyncQueue was disposed before the task started.'),
         StackTrace.current,
       );
     }
+    _pendingEntries.clear();
     return future;
   }
 
   /// Add block to queue.
   Future<T> enqueue(AsyncQueueBlock<T> block) {
-    if (_isDisposed) {
+    if (_isDisposing) {
       throw StateError('AsyncQueue has been disposed!');
     }
 

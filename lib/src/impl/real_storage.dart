@@ -31,7 +31,6 @@ base class RealRxStorage<Key extends Object, Options,
   final _writeQueueResources = <Object, AsyncQueue<Object?>>{};
 
   final _disposeMemo = AsyncMemoizer<void>();
-  var _isDisposing = false;
   late final _bag =
       DisposeBag(const <Object>[], '( RealRxStorage ~ ${shortHash(this)} )');
 
@@ -87,21 +86,22 @@ base class RealRxStorage<Key extends Object, Options,
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
+  bool get _isDisposing => _disposeMemo.hasRun || _bag.isClearing;
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   bool get _isLogEnabled => !_isDisposing && _loggerEventController != null;
 
-  /// Crash if [_loggerEventController] is null.
+  /// Publishes an event while logging is active.
   void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
-    if (_isDisposing) {
-      return;
+    if (_isLogEnabled) {
+      _loggerEventController!.add(event);
     }
-    assert(_debugAssertNotDisposed());
-
-    _loggerEventController!.add(event);
   }
 
   bool _debugAssertNotDisposed() {
     assert(() {
-      if (_isDisposing || _bag.isClearing || _bag.isDisposed) {
+      if (_isDisposing) {
         throw StateError('A $runtimeType was used after being disposed.\n'
             'Once you have called dispose() on a $runtimeType, it can no longer be used.');
       }
@@ -212,11 +212,6 @@ base class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void logIfEnabled(
       RxStorageLoggerEvent<Key, Options> Function() eventProducer) {
-    if (_isDisposing) {
-      return;
-    }
-    assert(_debugAssertNotDisposed());
-
     if (_isLogEnabled) {
       _publishLog(eventProducer());
     }
@@ -426,13 +421,12 @@ base class RealRxStorage<Key extends Object, Options,
     if (_isDisposing) {
       return _disposeMemo.future;
     }
-    _isDisposing = true;
-    return _disposeMemo.runOnce(() async {
-      await Future.wait(_writeQueueResources.values.map((q) => q.dispose()));
-      _writeQueueResources.clear();
-      await _bag.dispose();
-      _onDispose?.call();
-    });
+    return _disposeMemo.runOnce(() => Future.wait([
+          _bag.dispose(),
+          ..._writeQueueResources.values.map((q) => q.dispose()),
+        ])
+            .then((_) => _writeQueueResources.clear())
+            .then((_) => _onDispose?.call()));
   }
 }
 
