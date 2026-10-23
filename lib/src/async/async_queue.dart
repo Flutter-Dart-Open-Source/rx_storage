@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:rxdart_ext/rxdart_ext.dart';
 
 import '../util.dart';
+import 'async_memoizer.dart';
 
 final class _AsyncQueueEntry<T> {
   final Completer<T> completer;
@@ -27,9 +28,9 @@ final class AsyncQueue<T> {
   final _countS = StateSubject<int>(0, sync: true);
 
   late final DisposeBag _bag;
-  Future<void>? _disposeFuture;
+  final _disposeMemo = AsyncMemoizer<void>();
 
-  bool get _isDisposing => _disposeFuture != null;
+  bool get _isDisposing => _disposeMemo.hasRun;
 
   final _pendingEntries = HashSet<_AsyncQueueEntry<T>>.identity();
 
@@ -82,23 +83,18 @@ final class AsyncQueue<T> {
   /// Closes the queue and rejects pending entries with a [StateError].
   ///
   /// The active task can finish without keeping disposal waiting.
-  Future<void> dispose() {
-    final disposing = _disposeFuture;
-    if (disposing != null) {
-      return disposing;
-    }
+  Future<void> dispose() => _disposeMemo.runOnce(() {
+        final disposing = _bag.dispose();
+        for (final entry in _pendingEntries) {
+          entry.completer.completeError(
+            StateError('AsyncQueue was disposed before the task started.'),
+            StackTrace.current,
+          );
+        }
+        _pendingEntries.clear();
 
-    _disposeFuture = _bag.dispose();
-    for (final entry in _pendingEntries) {
-      entry.completer.completeError(
-        StateError('AsyncQueue was disposed before the task started.'),
-        StackTrace.current,
-      );
-    }
-    _pendingEntries.clear();
-
-    return _disposeFuture!;
-  }
+        return disposing;
+      });
 
   /// Add block to queue.
   Future<T> enqueue(AsyncQueueBlock<T> block) {

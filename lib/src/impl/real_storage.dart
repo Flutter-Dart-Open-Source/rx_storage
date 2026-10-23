@@ -95,7 +95,7 @@ base class RealRxStorage<Key extends Object, Options,
   /// Publishes an event.
   void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
     assert(() {
-      if (_isLogEnabled) {
+      if (!_isLogEnabled) {
         throw StateError(
           'Logging is not enabled. Please check _isLogEnabled before calling _publishLog.',
         );
@@ -219,8 +219,14 @@ base class RealRxStorage<Key extends Object, Options,
   @nonVirtual
   void logIfEnabled(
       RxStorageLoggerEvent<Key, Options> Function() eventProducer) {
+    if (!_isLogEnabled) {
+      return;
+    }
+
+    final event = eventProducer();
+    // The producer can synchronously dispose this storage.
     if (_isLogEnabled) {
-      _publishLog(eventProducer());
+      _publishLog(event);
     }
   }
 
