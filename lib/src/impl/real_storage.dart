@@ -86,17 +86,24 @@ base class RealRxStorage<Key extends Object, Options,
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  bool get _isDisposing => _disposeMemo.hasRun || _bag.isClearing;
+  bool get _isDisposing => _disposeMemo.hasRun;
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   bool get _isLogEnabled => !_isDisposing && _loggerEventController != null;
 
-  /// Publishes an event while logging is active.
+  /// Publishes an event.
   void _publishLog(RxStorageLoggerEvent<Key, Options> event) {
-    if (_isLogEnabled) {
-      _loggerEventController!.add(event);
-    }
+    assert(() {
+      if (_isLogEnabled) {
+        throw StateError(
+          'Logging is not enabled. Please check _isLogEnabled before calling _publishLog.',
+        );
+      }
+      return true;
+    }());
+
+    _loggerEventController!.add(event);
   }
 
   bool _debugAssertNotDisposed() {
@@ -107,6 +114,7 @@ base class RealRxStorage<Key extends Object, Options,
       }
       return true;
     }());
+
     return true;
   }
 
@@ -198,7 +206,6 @@ base class RealRxStorage<Key extends Object, Options,
     if (_isDisposing) {
       return;
     }
-    assert(_debugAssertNotDisposed());
 
     try {
       _keyValuesSubject.add(map);
@@ -394,11 +401,14 @@ base class RealRxStorage<Key extends Object, Options,
         .asyncMap<T?>(convert);
 
     return _isLogEnabled
-        ? stream
-            .doOnData((value) =>
-                _publishLog(OnDataStreamEvent(KeyAndValue(key, value, T))))
-            .doOnError(
-                (e, s) => _publishLog(OnErrorStreamEvent(RxStorageError(e, s))))
+        ? stream.doOn(
+            data: (value) => _isLogEnabled
+                ? _publishLog(OnDataStreamEvent(KeyAndValue(key, value, T)))
+                : null,
+            error: (e, s) => _isLogEnabled
+                ? _publishLog(OnErrorStreamEvent(RxStorageError(e, s)))
+                : null,
+          )
         : stream;
   }
 
@@ -417,17 +427,14 @@ base class RealRxStorage<Key extends Object, Options,
 
   @nonVirtual
   @override
-  Future<void> dispose() {
-    if (_isDisposing) {
-      return _disposeMemo.future;
-    }
-    return _disposeMemo.runOnce(() => Future.wait([
+  Future<void> dispose() => _disposeMemo.runOnce(
+        () => Future.wait([
           _bag.dispose(),
-          ..._writeQueueResources.values.map((q) => q.dispose()),
+          ..._writeQueueResources.values.map((q) => q.dispose())
         ])
             .then((_) => _writeQueueResources.clear())
-            .then((_) => _onDispose?.call()));
-  }
+            .then((_) => _onDispose?.call()),
+      );
 }
 
 /// Scope function extension
