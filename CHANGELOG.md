@@ -1,4 +1,4 @@
-## 4.0.0 - TBD
+## 4.0.0 - Oct 23, 2026
 
 ### Dependencies
 
