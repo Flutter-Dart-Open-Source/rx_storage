@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:disposebag/disposebag.dart';
 import 'package:meta/meta.dart';
@@ -23,13 +24,14 @@ typedef AsyncQueueBlock<T> = Future<T> Function();
 @internal
 final class AsyncQueue<T> {
   final _blockS = StreamController<_AsyncQueueEntry<T>>();
-  final _pendingEntries = <_AsyncQueueEntry<T>>{};
+  final _countS = StateSubject<int>(0, sync: true);
+
   late final DisposeBag _bag;
   Future<void>? _disposeFuture;
 
-  final _countS = StateSubject<int>(0, sync: true);
+  bool get _isDisposing => _disposeFuture != null;
 
-  bool get _isDisposing => _disposeFuture != null || _bag.isClearing;
+  final _pendingEntries = HashSet<_AsyncQueueEntry<T>>.identity();
 
   /// Construct an [AsyncQueue].
   AsyncQueue({
@@ -63,14 +65,12 @@ final class AsyncQueue<T> {
 
     Future<void> executeBlock(_AsyncQueueEntry<T> entry) {
       _pendingEntries.remove(entry);
+
       return Future<T>.sync(entry.block)
           .then<void>(entry.completer.complete)
           .onError<Object>(entry.completer.completeError)
-          .whenComplete(() {
-        if (!_isDisposing) {
-          _countS.value = _countS.value - 1;
-        }
-      });
+          .whenComplete(
+              () => _isDisposing ? null : _countS.update((v) => v - 1));
     }
 
     _blockS.stream
@@ -88,7 +88,7 @@ final class AsyncQueue<T> {
       return disposing;
     }
 
-    final future = _disposeFuture = _bag.dispose();
+    _disposeFuture = _bag.dispose();
     for (final entry in _pendingEntries) {
       entry.completer.completeError(
         StateError('AsyncQueue was disposed before the task started.'),
@@ -96,7 +96,8 @@ final class AsyncQueue<T> {
       );
     }
     _pendingEntries.clear();
-    return future;
+
+    return _disposeFuture!;
   }
 
   /// Add block to queue.
@@ -107,9 +108,11 @@ final class AsyncQueue<T> {
 
     final completer = Completer<T>.sync();
     final entry = _AsyncQueueEntry(completer, block);
+
     _pendingEntries.add(entry);
     _blockS.add(entry);
-    _countS.value = _countS.value + 1;
+    _countS.update((v) => v + 1);
+
     return completer.future;
   }
 }
