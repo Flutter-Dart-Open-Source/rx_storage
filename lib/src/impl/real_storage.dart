@@ -18,13 +18,11 @@ import '../util.dart';
 /// Default [RxStorage] implementation.
 base class RealRxStorage<Key extends Object, Options,
     S extends Storage<Key, Options>> implements RxStorage<Key, Options> {
-  static const _initialKeyValue = KeyAndValue<Object, Object>(
-      'rx_storage', 'Petrus Nguyen Thai Hoc <hoc081098@gmail.com>', String);
   static const _asyncQueueTimeout = Duration(seconds: 30);
 
-  /// Trigger subject
-  final _keyValuesSubject =
-      PublishSubject<Map<Key, KeyAndValue<Key, Object?>>>();
+  /// Null keys invalidate every observer. Diagnostics are only for logging.
+  final _changes = PublishSubject<
+      ({Set<Key>? keys, Map<Key, KeyAndValue<Key, Object?>>? diagnostics})>();
 
   /// Write queue.
   /// Basic lock mechanism to prevent concurrent access to asynchronous code.
@@ -64,7 +62,7 @@ base class RealRxStorage<Key extends Object, Options,
       assert(_storage is! RxStorage<Key, Options>);
     }
 
-    _keyValuesSubject.disposedBy(_bag);
+    _changes.disposedBy(_bag);
     logger?.let(_setupLogger);
   }
 
@@ -77,7 +75,8 @@ base class RealRxStorage<Key extends Object, Options,
       ..disposedBy(_bag)
       ..stream.listen(logger.log).disposedBy(_bag);
 
-    _keyValuesSubject
+    _changes
+        .mapNotNull((change) => change.diagnostics)
         .map<RxStorageLoggerEvent<Key, Options>>(
             (map) => KeysChangedEvent(map.toListOfKeyAndValues()))
         .listen(_loggerEventController!.add)
@@ -199,16 +198,23 @@ base class RealRxStorage<Key extends Object, Options,
     }
   }
 
-  /// Add changed map to subject to trigger.
+  /// Invalidates the keys in [changes], or all keys if [allKeys] is true.
+  ///
+  /// A null [changes] invalidates all keys without a [KeysChangedEvent].
+  /// Values in [changes] are diagnostic payloads and never reach decoders.
   @protected
   @nonVirtual
-  void sendChange(Map<Key, KeyAndValue<Key, Object?>> map) {
+  void sendChange(Map<Key, KeyAndValue<Key, Object?>>? changes,
+      {bool allKeys = false}) {
     if (_isDisposing) {
       return;
     }
 
     try {
-      _keyValuesSubject.add(map);
+      _changes.add((
+        keys: allKeys || changes == null ? null : changes.keys.toSet(),
+        diagnostics: changes,
+      ));
     } on StateError {
       assert(_debugAssertNotDisposed());
     }
@@ -298,13 +304,17 @@ base class RealRxStorage<Key extends Object, Options,
     assert(_debugAssertNotDisposed());
 
     return _enqueueWritingTask(this, () async {
+      // Keep the pre-clear key list for the existing KeysChangedEvent payload.
       final keys =
           (await _useStorage((s) => s.readAll((_, raw) => raw, options))).keys;
 
       return await useStorageWithHandlers(
         (s) => s.clear(options),
         (_, __) {
-          sendChange({for (final k in keys) k: KeyAndValue(k, null, Null)});
+          sendChange(
+            {for (final k in keys) k: KeyAndValue(k, null, Null)},
+            allKeys: true,
+          );
 
           if (_isLogEnabled) {
             _publishLog(ClearSuccessEvent(options));
@@ -395,16 +405,12 @@ base class RealRxStorage<Key extends Object, Options,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    FutureOr<T?> convert(KeyAndValue<Object, Object?> entry) =>
-        identical(entry, _initialKeyValue)
-            ? _useStorage((s) => s.read<T>(key, decoder, options))
-            : entry.value as FutureOr<T?>;
-
-    final stream = _keyValuesSubject
+    final stream = _changes
+        .where((change) => change.keys?.contains(key) ?? true)
         .toSingleSubscriptionStream()
-        .mapNotNull<KeyAndValue<Object, Object?>>((map) => map[key])
-        .startWith(_initialKeyValue) // Dummy value to trigger initial load.
-        .asyncMap<T?>(convert);
+        .mapTo<void>(null)
+        .startWith(null)
+        .asyncMap((_) => _useStorage((s) => s.read<T>(key, decoder, options)));
 
     return _isLogEnabled
         ? stream.doOn(
@@ -424,7 +430,7 @@ base class RealRxStorage<Key extends Object, Options,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _keyValuesSubject
+    return _changes
         .toSingleSubscriptionStream()
         .mapTo<void>(null)
         .startWith(null)

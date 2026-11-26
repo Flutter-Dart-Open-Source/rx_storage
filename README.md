@@ -28,7 +28,7 @@ Liked some of my work? Buy me a coffee (or more likely a beer).
 2. [Observing changes](#2-observing-changes)
 3. [Storage adapters and codecs](#3-storage-adapters-and-codecs)
 4. [Ordering and disposal](#4-ordering-and-disposal)
-5. [Migrating to 4.0.0](#5-migrating-to-400)
+5. [Migration](#5-migration)
 6. [Links and support](#6-links-and-support)
 
 ## 1. Getting started
@@ -84,26 +84,18 @@ Direct adapter changes and changes through other wrappers are not observed.
 
 ### 2.1. Observe one key
 
-`observe(key, decoder)` starts with a storage read, then receives changes for
-that key:
+`observe(key, decoder)` reads and decodes the key on subscription and after a
+successful write, update, or removal of that key. A successful clear triggers
+a read for every observed key, including missing keys.
 
-| Trigger | Emitted value |
-| --- | --- |
-| Listener subscribes | The stored value, passed through the decoder |
-| `write()` or `update()` succeeds | The value passed to the write, without decoding it again |
-| `remove()` succeeds | `null` |
-| `clear()` succeeds | `null` if the key appeared in the adapter's `readAll()` before clearing |
-
-The initial decoder receives `null` for both missing keys and stored nulls.
-It can supply a default. Later mutation events bypass the decoder, so removal
-still emits `null`.
-
-- Use `containsKey()` to distinguish a missing key from a stored null, if the adapter retains nulls.
-- Read and decoding failures become stream errors. Incompatible mutation values
-  produce a `TypeError`. Null events are always valid.
-- Equal consecutive values are emitted. Use `.distinct()` to skip duplicates.
-
-<img src="https://raw.githubusercontent.com/Flutter-Dart-Open-Source/rx_storage/master/screenshots/stream-timeline.png" width="720" alt="Stream timeline: subscribing to K1 triggers an initial read, followed by events for K1 changes only." />
+- Each subscription reads independently and processes notifications in order.
+  A read can see a newer write than the one that triggered it, so intermediate
+  values can be skipped and the same value can repeat. Use `.distinct()` to skip
+  equal consecutive values.
+- The decoder receives `null` for both missing keys and stored nulls, including
+  after removal. Use `containsKey()` when you need to tell them apart.
+- Read and decoding failures become stream errors. A successful write does not
+  wait for the subscribers' reads or decoders.
 
 ### 2.2. Observe all entries
 
@@ -149,11 +141,22 @@ The queue excludes reads, `clear()`, other keys, direct adapter access, and othe
 wrappers. It provides no multi-key transactions. `update()` is experimental.
 
 Await required writes before `dispose()`. Pending tasks fail with `StateError`.
-Started operations can finish without further notifications or logs. Repeated
-disposal shares one result and runs external cleanup at most once. Stored data
-and adapter resources remain. Do not use the wrapper afterward.
+Started mutations can finish without further notifications or logs. Existing
+observers can drain buffered notifications. Cancel a subscription to stop
+delivery. Repeated disposal shares one result and runs external cleanup at
+most once. Stored data and adapter resources remain.
 
-## 5. Migrating to 4.0.0
+## 5. Migration
+
+### From 4.x to 5.0.0
+
+Review per-key decoders for both stored values and missing keys. The decoder
+now runs after every relevant notification, so removal can emit a default.
+Await the mutation's future when you need to confirm it succeeded. If a
+consumer needs every mutation input, record it in the code that performs
+the write.
+
+### From 3.x to 4.0.0
 
 `readAll()` and `observeAll()` now require an `EntryDecoder<Key>` and produce
 decoded `Map<Key, Object?>` values. To keep the previous raw-value behavior,

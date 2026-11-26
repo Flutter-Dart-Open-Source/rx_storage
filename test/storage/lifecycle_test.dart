@@ -7,6 +7,59 @@ import '../fake_storage.dart';
 
 void main() {
   group('RxStorage lifecycle', () {
+    test('cancel stops delivery while a started decoder finishes', () async {
+      final storage = RxStorage<String, void>(InMemoryStorage<String>());
+      addTearDown(storage.dispose);
+      final started = Completer<void>();
+      final release = Completer<void>();
+      final finished = Completer<void>();
+      var calls = 0;
+      final subscription = storage.observe<int>('key', (raw) async {
+        calls++;
+        started.complete();
+        await release.future;
+        finished.complete();
+        throw StateError('Decoder finished after cancellation');
+      }).listen(
+        (_) => fail('Cancelled subscription received data'),
+        onError: (Object error) => fail('Unexpected stream error: $error'),
+        onDone: () => fail('Cancelled subscription received done'),
+      );
+      addTearDown(subscription.cancel);
+      addTearDown(() {
+        if (!release.isCompleted) release.complete();
+      });
+      await started.future;
+      await storage.write<int>('key', 1, (value) => value);
+      await subscription.cancel();
+      await storage.dispose();
+      expect(finished.isCompleted, isFalse);
+      release.complete();
+      await finished.future;
+      expect(calls, 1);
+    });
+
+    test('adapter failure after writing does not trigger an observer read',
+        () async {
+      final adapter = _WriteThenFailStorage();
+      final storage = RxStorage<String, void>(adapter);
+      addTearDown(storage.dispose);
+      final observed = Completer<void>();
+      final output = expectLater(
+        storage.observe<int>('key', (raw) {
+          if (!observed.isCompleted) observed.complete();
+          return raw as int?;
+        }),
+        emitsInOrder(<Object?>[null, emitsDone]),
+      );
+      await observed.future;
+      await expectLater(storage.write<int>('key', 1, (value) => value),
+          throwsA(same(adapter.failure)));
+      expect(await storage.read<int>('key', (raw) => raw as int?), 1);
+      await storage.dispose();
+      await output;
+    });
+
     test('concurrent and repeated disposal runs external cleanup once',
         () async {
       var cleanups = 0;
@@ -272,4 +325,18 @@ final class _RecordingLogger implements RxStorageLogger<String, void> {
 
   @override
   void log(RxStorageLoggerEvent<String, void> event) => events.add(event);
+}
+
+final class _WriteThenFailStorage extends FakeStorage {
+  final failure = StateError('Adapter failed after writing');
+
+  _WriteThenFailStorage() : super({});
+
+  @override
+  Future<void> write<T extends Object>(
+      String key, T? value, Encoder<T?> encoder,
+      [void options]) async {
+    await super.write<T>(key, value, encoder, options);
+    throw failure;
+  }
 }

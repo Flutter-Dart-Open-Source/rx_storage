@@ -1,3 +1,14 @@
+## 5.0.0
+
+- **Breaking**: `observe()` reads and decodes the stored representation after
+  every relevant notification, just as it does when listening starts. Removal
+  and clear can now emit the decoder's default for a missing key. Each listener
+  reads independently, so rapid mutations can skip intermediate values and
+  report the latest state more than once.
+- Subclasses that refresh their adapter can call `sendChange(null)` to invalidate
+  every observer without a `KeysChangedEvent`. To retain diagnostic values while
+  invalidating every key, pass the diagnostic map with `allKeys: true`.
+
 ## 4.0.0 - Oct 23, 2026
 
 ### Dependencies
