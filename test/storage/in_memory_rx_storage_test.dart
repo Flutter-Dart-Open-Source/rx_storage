@@ -29,13 +29,13 @@ void main() {
       });
     }
 
-    test('observe emits original values after encoding and null after deletion',
-        () async {
+    test('observe decodes stored values after writes and deletion', () async {
       await storage.write<int>('key', 1, (value) => 'encoded:$value');
       await _expectChanges(
         storage.observe<int>(
           'key',
-          (raw) => int.parse((raw as String).split(':').last),
+          (raw) =>
+              raw == null ? null : int.parse((raw as String).split(':').last),
         ),
         <Object?>[1, 2, null, 3, null],
         () async {
@@ -49,13 +49,14 @@ void main() {
       expect(await storage.readAll((_, raw) => raw), isEmpty);
     });
 
-    test('observe applies decoder defaults only to the initial read', () async {
+    test('observe decodes retained null and removed keys with the same default',
+        () async {
       await _expectChanges(
         storage.observe<int>('key', (raw) => raw as int? ?? 42),
-        <Object?>[42, null, null],
+        <Object?>[42, 42, 42],
         () async {
           expect(await storage.containsKey('key'), isFalse);
-          await storage.write<int>('key', null, (value) => value);
+          await storage.write<int>('key', 1, (_) => null);
           expect(await storage.containsKey('key'), isTrue);
           await storage.remove('key');
         },
@@ -227,6 +228,56 @@ void main() {
       );
     });
 
+    test('an observer decode error does not fail the write or another observer',
+        () async {
+      final failure = FormatException('Cannot decode three');
+      final normal = StreamIterator(storage.observe<int>('key', (raw) {
+        if (raw == '3') throw failure;
+        return raw == null ? null : int.parse(raw as String);
+      }));
+      final formatted = StreamIterator(storage.observe<String>(
+        'key',
+        (raw) async => raw == null ? 'missing' : 'stored:$raw',
+      ));
+      addTearDown(normal.cancel);
+      addTearDown(formatted.cancel);
+      expect(await normal.moveNext(), isTrue);
+      expect(await formatted.moveNext(), isTrue);
+
+      var encoderCalls = 0;
+      await storage.write<int>('key', null, (_) async {
+        encoderCalls++;
+        return '3';
+      });
+      expect(encoderCalls, 1);
+      expect(await storage.containsKey('key'), isTrue);
+      await expectLater(normal.moveNext(), throwsA(same(failure)));
+      expect(await formatted.moveNext(), isTrue);
+      expect(formatted.current, 'stored:3');
+      expect(
+          await storage.observe<String>('key', (raw) => raw as String?).first,
+          '3');
+    });
+
+    test('only clear invalidates observers of unrelated missing keys',
+        () async {
+      var reads = 0;
+      await _expectChanges(
+        storage.observe<int>('missing', (raw) {
+          reads++;
+          return raw as int? ?? 42;
+        }),
+        <Object?>[42, 42, emitsDone],
+        () async {
+          await storage.write<int>('other', 1, (value) => value);
+          await storage.remove('other');
+          await storage.clear();
+          await storage.dispose();
+        },
+      );
+      expect(reads, 2);
+    });
+
     test('failed writes and updates leave entries and stream values unchanged',
         () async {
       await storage.write<int>('key', 1, (value) => value);
@@ -256,25 +307,40 @@ void main() {
       );
     });
 
-    test('concurrent asynchronous updates preserve every increment', () async {
-      await _expectChanges(
-        storage.observe<int>('counter', (raw) => raw as int?),
-        <Object?>[null, for (var value = 1; value <= 25; value++) value],
-        () => Future.wait(List.generate(
-          25,
-          (_) => storage.update<int>(
-            key: 'counter',
-            decoder: (raw) async => raw as int?,
-            transformer: (value) async {
-              await Future<void>.delayed(Duration.zero);
-              return (value ?? 0) + 1;
-            },
-            encoder: (value) async => value,
-          ),
-        )),
+    test('observe rereads for every update after a slow decoder', () async {
+      final started = Completer<void>();
+      final initial = Completer<int?>();
+      var reads = 0;
+      final output = expectLater(
+        storage.observe<int>('counter', (raw) {
+          if (++reads == 1) {
+            started.complete();
+            return initial.future;
+          }
+          return raw as int?;
+        }),
+        emitsInOrder(
+            <Object?>[null, for (var i = 0; i < 25; i++) 25, emitsDone]),
       );
-
+      addTearDown(() {
+        if (!initial.isCompleted) initial.complete(null);
+      });
+      await started.future;
+      await Future.wait(List.generate(
+        25,
+        (_) => storage.update<int>(
+          key: 'counter',
+          decoder: (raw) async => raw as int?,
+          transformer: (value) async => (value ?? 0) + 1,
+          encoder: (value) async => value,
+        ),
+      ));
+      expect(reads, 1);
       expect(await storage.read<int>('counter', (raw) => raw as int?), 25);
+      await storage.dispose();
+      initial.complete(null);
+      await output;
+      expect(reads, 26);
     });
   });
 

@@ -33,21 +33,17 @@ abstract interface class RxStorage<Key extends Object, Options>
 
   /// Returns a single-subscription stream of nullable values for [key].
   ///
-  /// Listening triggers an initial [Storage.read] using [decoder] and [options],
-  /// without first checking [containsKey]. A missing key and a stored null value
-  /// both reach the decoder as null. The decoder determines the initial value,
-  /// including any default for null, or produces a stream error if decoding fails.
-  /// The stream does not convey whether the key exists.
+  /// Listening reads the key with [decoder] and [options]. Successful [write],
+  /// [update], and [remove] operations on that key trigger another read. A
+  /// successful [clear] triggers a read for every observed key.
   ///
-  /// After a successful [write] or [update] through this wrapper, the stream emits
-  /// the original value passed to the write, without reading or decoding it again.
-  /// A successful [remove] emits null. A successful [clear] emits null for keys
-  /// returned by [Storage.readAll] before clearing. These events bypass
-  /// [decoder], even if it supplies a default for the initial read.
+  /// Each stream reads and decodes independently and in notification order.
+  /// Values reflect storage when the read runs. Intermediate states can be
+  /// skipped and equal values can repeat. Use [Stream.distinct] to filter them.
   ///
-  /// Read and decoding failures, and subsequent values incompatible with [T],
-  /// are emitted as stream errors. Equal consecutive values are not filtered;
-  /// use [Stream.distinct] to suppress duplicates.
+  /// A missing key and a stored null both reach [decoder] as null, including
+  /// after removal. The decoder may supply a default. Read and decoder failures
+  /// are emitted as stream errors.
   Stream<T?> observe<T extends Object>(Key key, Decoder<T?> decoder,
       [Options options]);
 
@@ -75,6 +71,10 @@ abstract interface class RxStorage<Key extends Object, Options>
   /// so await writes that must finish before disposing. Storage operations that
   /// have already started can finish after disposal, without further change
   /// notifications or log events. Disposal does not roll back those operations.
+  ///
+  /// Existing observers can drain buffered changes and finish pending reads
+  /// before they receive done. Cancel a subscription to stop receiving events.
+  /// Cancellation does not stop an adapter read or decoder already running.
   ///
   /// Repeated calls return the same future, including any cleanup error.
   ///
