@@ -21,7 +21,7 @@ base class RealRxStorage<Key extends Object, Options,
   static const _asyncQueueTimeout = Duration(seconds: 30);
 
   /// Null keys invalidate every observer. Diagnostics are only for logging.
-  final _changes = PublishSubject<
+  final _changesSubject = PublishSubject<
       ({Set<Key>? keys, Map<Key, KeyAndValue<Key, Object?>>? diagnostics})>();
 
   /// Write queue.
@@ -62,7 +62,7 @@ base class RealRxStorage<Key extends Object, Options,
       assert(_storage is! RxStorage<Key, Options>);
     }
 
-    _changes.disposedBy(_bag);
+    _changesSubject.disposedBy(_bag);
     logger?.let(_setupLogger);
   }
 
@@ -75,7 +75,7 @@ base class RealRxStorage<Key extends Object, Options,
       ..disposedBy(_bag)
       ..stream.listen(logger.log).disposedBy(_bag);
 
-    _changes
+    _changesSubject
         .mapNotNull((change) => change.diagnostics)
         .map<RxStorageLoggerEvent<Key, Options>>(
             (map) => KeysChangedEvent(map.toListOfKeyAndValues()))
@@ -211,7 +211,7 @@ base class RealRxStorage<Key extends Object, Options,
     }
 
     try {
-      _changes.add((
+      _changesSubject.add((
         keys: allKeys || changes == null ? null : changes.keys.toSet(),
         diagnostics: changes,
       ));
@@ -405,7 +405,7 @@ base class RealRxStorage<Key extends Object, Options,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    final stream = _changes
+    final stream = _changesSubject
         .where((change) => change.keys?.contains(key) ?? true)
         .toSingleSubscriptionStream()
         .mapTo<void>(null)
@@ -430,7 +430,7 @@ base class RealRxStorage<Key extends Object, Options,
       [Options? options]) {
     assert(_debugAssertNotDisposed());
 
-    return _changes
+    return _changesSubject
         .toSingleSubscriptionStream()
         .mapTo<void>(null)
         .startWith(null)
